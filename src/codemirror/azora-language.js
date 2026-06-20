@@ -1,33 +1,23 @@
 import { StreamLanguage } from '@codemirror/language'
 
 const keywords = new Set([
-  'var', 'fin', 'func', 'hook', 'test', 'if', 'else', 'for', 'loop', 'while',
-  'in', 'as', 'is', 'when', 'return', 'break', 'continue', 'expose', 'confine',
-  'protect', 'inline', 'deepinline', 'noinline', 'enum', 'slot', 'pack', 'impl',
-  'infx', 'deco', 'zone', 'package', 'use', 'flip', 'flop', 'by', 'typealias',
-  'spec', 'where', 'each', 'type', 'let', 'task', 'suspend', 'flow', 'yield',
-  'launch', 'async', 'await', 'assert', 'trace', 'with', 'self', 'this', 'base',
-  'prop', 'it', 'fail', 'try', 'catch', 'defer', 'heap', 'drop', 'node', 'repl',
-  'leaf', 'ctor', 'dtor', 'threadlocal', 'oper', 'ref', 'mut', 'dyn', 'out',
-  'solo', 'inject', 'wrap', 'bind', 'lazy', 'rem', 'view', 'effect', 'guard',
-  'throw', 'rescue', 'bridge', 'unsafe', 'region', 'isolated', 'reverse',
-  'tup', 'arr', 'vec', 'set', 'map', 'mix', 'virtual', 'replace',
+  'var', 'let', 'fin', 'func', 'return', 'package', 'if', 'else',
+  'inline', 'deepinline', 'noinline', 'zone', 'friend', 'test',
+  'assert', 'trace', 'for', 'while', 'loop', 'in', 'break',
+  'continue', 'pack',
 ])
 
 const types = new Set([
-  'Int', 'Real', 'Bool', 'String', 'Unit', 'Type', 'ReturnType',
-  'Byte', 'Short', 'Long', 'UInt', 'ULong', 'UByte', 'UShort',
-  'Float', 'Decimal', 'Char', 'Size', 'USize', 'Cent', 'UCent',
-  'Nothing', 'Any',
+  'Int', 'UInt', 'Long', 'ULong', 'Byte', 'UByte', 'Short', 'UShort',
+  'Cent', 'UCent', 'Float', 'Real', 'Decimal', 'Bool', 'Char', 'String',
+  'Unit', 'Any',
 ])
 
 const builtins = new Set([
-  'print', 'println', 'delay', 'hasDeco', 'getDeco', 'decoTargets',
-  'platform', 'toString', 'toInt', 'toReal', 'toChar', 'stringLength',
-  'charAt', 'ord', 'chr', 'promote',
+  'println',
 ])
 
-const atoms = new Set(['true', 'false', 'null'])
+const atoms = new Set(['true', 'false'])
 
 const azoraStreamParser = {
   startState() {
