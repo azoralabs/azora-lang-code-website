@@ -4,7 +4,8 @@ const keywords = new Set([
   'var', 'let', 'fin', 'func', 'return', 'package', 'if', 'else',
   'inline', 'deepinline', 'noinline', 'zone', 'friend', 'test',
   'assert', 'trace', 'for', 'while', 'loop', 'in', 'break',
-  'continue', 'pack',
+  'continue', 'pack', 'enum', 'when', 'throw', 'try', 'catch',
+  'impl', 'self',
 ])
 
 const types = new Set([
