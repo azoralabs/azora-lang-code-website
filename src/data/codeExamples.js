@@ -380,4 +380,85 @@ func main() {
     println(a == Vec2(1, 2))
 }`,
   },
+  {
+    title: 'Infix Functions',
+    code: `package playground
+
+infix func shl(x: Int, bits: Int): Int {
+    return x * bits
+}
+
+func main() {
+    println(2 shl 3)
+    println(10 shl 5)
+}`,
+  },
+  {
+    title: 'Bitwise Operators',
+    code: `package playground
+
+func main() {
+    var a = 0b1100
+    var b = 0b1010
+    println(a & b)
+    println(a | b)
+    println(a ^ b)
+    println(~a)
+    println(a << 2)
+}`,
+  },
+  {
+    title: 'Default Params',
+    code: `package playground
+
+func greet(name: String, greeting: String = "Hello"): String {
+    return "$greeting, $name!"
+}
+
+func main() {
+    println(greet("Azora"))
+    println(greet("World", "Hi"))
+}`,
+  },
+  {
+    title: 'Guard',
+    code: `package playground
+
+func half(n: Int): Int {
+    guard n > 0 else { return 0 }
+    return n / 2
+}
+
+func main() {
+    println(half(10))
+    println(half(-3))
+}`,
+  },
+  {
+    title: 'Nullable Types',
+    code: `package playground
+
+func first(nums: [Int]): Int? {
+    if nums.length == 0 { return null }
+    return nums[0]
+}
+
+func main() {
+    println(first([7, 8, 9]))
+    var v = first([])
+    if v == null { println("empty") }
+}`,
+  },
+  {
+    title: 'Set Literals',
+    code: `package playground
+
+func main() {
+    var nums = {1, 2, 3, 2, 1}
+    println(nums.length)
+    nums.add(4)
+    println(nums.contains(3))
+    println(nums.length)
+}`,
+  },
 ]
