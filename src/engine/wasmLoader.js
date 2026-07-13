@@ -1,3 +1,4 @@
+
 export async function loadWasmEngine(version) {
   const basePath = `${import.meta.env.BASE_URL}wasm/${version}`
   const cacheBust = `?t=${Date.now()}`
@@ -16,86 +17,45 @@ export async function loadWasmEngine(version) {
 
   const ns = await waitForExports()
 
+  const safeJson = (fn) => {
+    try {
+      return JSON.parse(fn())
+    } catch (e) {
+      return { success: false, output: '', errors: e.message || String(e) }
+    }
+  }
+
+  const safeJsonAsync = async (fn) => {
+    try {
+      return JSON.parse(await fn())
+    } catch (e) {
+      return { success: false, output: '', errors: e.message || String(e) }
+    }
+  }
+
   return {
     preprocess(source) {
-      try {
-        const json = ns.azPreprocess(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+      return safeJson(() => ns.azPreprocess(source))
     },
 
     async interpret(source) {
-      try {
-        const json = await ns.azInterpret(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
-    },
-
-    generateKotlin(source) {
-      try {
-        const json = ns.azGenerateKotlin(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
-    },
-
-    generateCSharp(source) {
-      try {
-        const json = ns.azGenerateCSharp(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+      return safeJsonAsync(() => ns.azInterpret(source))
     },
 
     generateJavaScript(source) {
-      try {
-        const json = ns.azGenerateJavaScript(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+      return safeJson(() => ns.azGenerateJavaScript(source))
     },
 
     generateLlvmIr(source) {
-      try {
-        const json = ns.azGenerateLlvmIr(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+      return safeJson(() => ns.azGenerateLlvmIr(source))
     },
 
-    generatePython(source) {
-      try {
-        const json = ns.azGeneratePython(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
-    },
-
-    generateSwift(source) {
-      try {
-        const json = ns.azGenerateSwift(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+    generateWasm(source) {
+      return safeJson(() => ns.azGenerateWasm(source))
     },
 
     async runTests(source) {
-      try {
-        const json = await ns.azRunTests(source)
-        return JSON.parse(json)
-      } catch (e) {
-        return { success: false, output: '', errors: e.message || String(e) }
-      }
+      return safeJsonAsync(() => ns.azRunTests(source))
     },
 
     getVersion() {

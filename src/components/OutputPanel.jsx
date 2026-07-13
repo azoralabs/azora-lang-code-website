@@ -1,36 +1,30 @@
+
 import ConsoleOutput from './ConsoleOutput.jsx'
 import CodeView from './CodeView.jsx'
 
 const ALL_TABS = [
   { id: 'console', label: 'Output' },
   { id: 'preprocessed', label: 'Azora IR' },
-  { id: 'kotlin', label: 'Kotlin' },
-  { id: 'csharp', label: 'C#' },
-  { id: 'javascript', label: 'TypeScript' },
-  { id: 'python', label: 'Python' },
-  { id: 'swift', label: 'Swift' },
+  { id: 'javascript', label: 'JavaScript' },
+  { id: 'wasm', label: 'WebAssembly' },
   { id: 'llvm-ir', label: 'LLVM IR' },
 ]
+
+const TARGET_CODE = {
+  javascript: { tab: 'javascript', key: 'javascript', language: 'javascript' },
+  wasm: { tab: 'wasm', key: 'wasm', language: 'wasm' },
+  'llvm-ir': { tab: 'llvm-ir', key: 'llvmIr', language: 'llvm' },
+}
 
 export default function OutputPanel({ activeTab, onTabChange, results, target }) {
   const consoleMessages = results?.console || []
   const hasErrors = consoleMessages.some(m => m.type === 'error')
   const preprocessedCode = results?.preprocessed || ''
-  const kotlinCode = results?.kotlin || ''
-  const csharpCode = results?.csharp || ''
-  const javascriptCode = results?.javascript || ''
-  const pythonCode = results?.python || ''
-  const swiftCode = results?.swift || ''
-  const llvmIrCode = results?.llvmIr || ''
-  const tabs = ALL_TABS.filter(t => {
-    if (t.id === 'kotlin') return target === 'kotlin-jvm'
-    if (t.id === 'csharp') return target === 'csharp-dotnet'
-    if (t.id === 'javascript') return target === 'javascript'
-    if (t.id === 'python') return target === 'python'
-    if (t.id === 'swift') return target === 'swift'
-    if (t.id === 'llvm-ir') return target === 'llvm-ir'
-    return true
-  })
+  const active = TARGET_CODE[target]
+
+  const tabs = ALL_TABS.filter((t) =>
+    t.id === 'console' || t.id === 'preprocessed' || (active != null && t.id === active.tab)
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -63,23 +57,8 @@ export default function OutputPanel({ activeTab, onTabChange, results, target })
         {activeTab === 'preprocessed' && (
           <CodeView code={preprocessedCode} language="azora" />
         )}
-        {activeTab === 'kotlin' && target === 'kotlin-jvm' && (
-          <CodeView code={kotlinCode} language="kotlin" />
-        )}
-        {activeTab === 'csharp' && target === 'csharp-dotnet' && (
-          <CodeView code={csharpCode} language="csharp" />
-        )}
-        {activeTab === 'javascript' && target === 'javascript' && (
-          <CodeView code={javascriptCode} language="typescript" />
-        )}
-        {activeTab === 'python' && target === 'python' && (
-          <CodeView code={pythonCode} language="python" />
-        )}
-        {activeTab === 'swift' && target === 'swift' && (
-          <CodeView code={swiftCode} language="swift" />
-        )}
-        {activeTab === 'llvm-ir' && target === 'llvm-ir' && (
-          <CodeView code={llvmIrCode} language="llvm" />
+        {active && activeTab === active.tab && (
+          <CodeView code={results?.[active.key] || ''} language={active.language} />
         )}
       </div>
     </div>

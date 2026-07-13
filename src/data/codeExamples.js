@@ -70,21 +70,25 @@ func main() {
 }`,
   },
   {
-    title: 'Arrays',
+    title: 'Lists',
     code: `package playground
+use zone std
 
 func main() {
-    var nums = [10, 20, 30]
+    var nums = MutableList<Int>()
+    nums.add(10)
+    nums.add(20)
+    nums.add(30)
     println(nums[0])
-    println(nums.length)
+    println(nums.size)
 
     nums.add(40)
     nums[0] = 99
-    println(nums.length)
+    println(nums.size)
     println(nums[0])
 
     var total = 0
-    for i in 0..<nums.length {
+    for i in 0..<nums.size {
         total += nums[i]
     }
     println("total = \${total}")
@@ -107,6 +111,7 @@ func main() {
   {
     title: 'Structs (pack)',
     code: `package playground
+use zone std
 
 pack Point {
     var x: Int
@@ -121,7 +126,7 @@ func main() {
     p.y += 1
     println("\${p.x}, \${p.y}")
 
-    var points = [Point(1, 1), Point(2, 2), Point(3, 3)]
+    var points = listOf(Point(1, 1), Point(2, 2), Point(3, 3))
     println("last = \${points[2].x}, \${points[2].y}")
 }`,
   },
@@ -259,13 +264,14 @@ func main() {
   {
     title: 'Impl Methods',
     code: `package playground
+use zone std
 
 pack Point {
     var x: Int
     var y: Int
 }
 
-impl Point {
+impl pack Point {
     func lengthSquared(): Int {
         return self.x * self.x + self.y * self.y
     }
@@ -280,6 +286,73 @@ func main() {
     println(p.lengthSquared())
     p.moveBy(10, 20)
     println(p.lengthSquared())
+}`,
+  },
+
+  {
+    title: 'Extension Methods',
+    code: `package playground
+
+pack Counter {
+    var value: Int
+}
+
+impl pack Counter {
+    func bump() {
+        self.value = self.value + 1
+    }
+}
+
+func Counter.peek(): Int { ref self ->
+    return self.value
+}
+
+func main() {
+    var c = Counter(40)
+    c.bump()
+    println("value=\${c.peek()}")
+}`,
+  },
+  {
+    title: 'Reactive mem/rem/ret',
+    code: `package playground
+
+func main() {
+    mem local: Int = 1
+    rem saved: Int = 2
+    ret kept: Int = 3
+    println(local + saved + kept)
+}`,
+  },
+  {
+    title: 'Iterator Loop Continue',
+    code: `package playground
+
+pack Iter {
+    var i: Int
+    var resets: Int
+}
+
+impl pack Iter {
+    func reset() {
+        self.resets = self.resets + 1
+        self.i = 0
+    }
+    func hasNext(): Bool {
+        return self.i < 2
+    }
+    func next(): Int {
+        self.i = self.i + 1
+        return self.i
+    }
+}
+
+func main() {
+    var it = Iter(1, 0)
+    loop it continue {
+        println(it.next())
+    }
+    println("resets=\${it.resets}")
 }`,
   },
   {
@@ -332,6 +405,7 @@ func main() {
   {
     title: 'Traits (spec)',
     code: `package playground
+use zone std
 
 pack Point {
     var x: Int
@@ -362,7 +436,7 @@ pack Vec2 {
     var y: Int
 }
 
-impl Vec2 {
+impl pack Vec2 {
     func plus(other: Vec2): Vec2 {
         return Vec2(self.x + other.x, self.y + other.y)
     }
@@ -384,8 +458,8 @@ func main() {
     title: 'Infix Functions',
     code: `package playground
 
-infix func shl(x: Int, bits: Int): Int {
-    return x * bits
+infx Int.shl(bits: Int): Int {
+    return self * bits
 }
 
 func main() {
@@ -450,15 +524,125 @@ func main() {
 }`,
   },
   {
-    title: 'Set Literals',
+    title: 'Maps',
     code: `package playground
 
 func main() {
-    var nums = {1, 2, 3, 2, 1}
-    println(nums.length)
-    nums.add(4)
-    println(nums.contains(3))
-    println(nums.length)
+    var scores = ["alice": 90, "bob": 75]
+    scores["carol"] = 88
+    println(scores["alice"])
+    println(scores["bob"])
+    scores["bob"] = 80
+    println(scores["bob"])
+}`,
+  },
+  {
+    title: 'Tagged Unions (slot)',
+    code: `package playground
+
+slot Shape {
+    Circle(Int)
+    Rect(Int, Int)
+    Empty
+}
+
+func area(s: Shape): Int {
+    when s {
+        Shape.Circle(r) -> { return r * r * 3 }
+        Shape.Rect(w, h) -> { return w * h }
+        Shape.Empty -> { return 0 }
+    }
+}
+
+func main() {
+    println(area(Shape.Circle(5)))
+    println(area(Shape.Rect(4, 6)))
+    println(area(Shape.Empty))
+}`,
+  },
+  {
+    title: 'Inheritance',
+    code: `package playground
+
+node Animal(name: String) {
+    func speak(): String {
+        return "..."
+    }
+}
+
+leaf Dog(name: String) : Animal(name) {
+    repl func speak(): String {
+        return "Woof"
+    }
+}
+
+func main() {
+    var d: Animal = Dog("Rex")
+    println(d.speak())
+}`,
+  },
+  {
+    title: 'Generators (flow)',
+    code: `package playground
+
+flow squares(n: Int): Int {
+    for i in 0..<n {
+        yield i * i
+    }
+}
+
+func main() {
+    var sum = 0
+    for x in squares(5) {
+        sum += x
+    }
+    println(sum)
+}`,
+  },
+  {
+    title: 'Dependency Injection',
+    code: `package playground
+
+solo Counter {
+    var n: Int = 0
+    func inc(): Int {
+        self.n = self.n + 1
+        return self.n
+    }
+}
+
+func main() {
+    println(inject Counter.inc())
+    println(inject Counter.inc())
+}`,
+  },
+  {
+    title: 'Pointers',
+    code: `package playground
+
+func main() {
+    var p: Int* = alloc [10, 20, 30]
+    println(*p)
+    println(*(p + 1))
+    *(p + 2) = 99
+    println(*(p + 2))
+}`,
+  },
+  {
+    title: 'Variadic Generics',
+    code: `package playground
+
+func<...T> sumAll(first: Int, rest: ...T): Int {
+    var total = first
+    for x in rest {
+        total = total + x
+    }
+    return total
+}
+
+func main() {
+    println(sumAll(1, 2, 3))
+    println(sumAll(10, 20, 30, 40))
 }`,
   },
 ]

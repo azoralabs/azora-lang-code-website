@@ -1,5 +1,5 @@
 /**
- * Strips TypeScript type annotations to produce runnable JavaScript.
+ * Normalizes generated JavaScript before running it in the browser sandbox.
  */
 function stripTypes(tsCode) {
   // Convert TS enums to frozen objects

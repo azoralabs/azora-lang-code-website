@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AZORA_LANG="$(cd "$SCRIPT_DIR/../azora-lang" && pwd)"
-VERSION="0.0.1-alpha.2"
+VERSION="0.0.3"
 DEST="$SCRIPT_DIR/public/wasm/$VERSION"
 
 echo "Building WASM bundle for Azora $VERSION..."

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { loadWasmEngine } from '../engine/wasmLoader.js'
 
 export default function useAzoraEngine(version) {
@@ -38,16 +39,6 @@ export default function useAzoraEngine(version) {
     return engineRef.current.interpret(source)
   }, [])
 
-  const generateKotlin = useCallback((source) => {
-    if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateKotlin(source)
-  }, [])
-
-  const generateCSharp = useCallback((source) => {
-    if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateCSharp(source)
-  }, [])
-
   const generateJavaScript = useCallback((source) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
     return engineRef.current.generateJavaScript(source)
@@ -58,14 +49,9 @@ export default function useAzoraEngine(version) {
     return engineRef.current.generateLlvmIr(source)
   }, [])
 
-  const generatePython = useCallback((source) => {
+  const generateWasm = useCallback((source) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generatePython(source)
-  }, [])
-
-  const generateSwift = useCallback((source) => {
-    if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateSwift(source)
+    return engineRef.current.generateWasm(source)
   }, [])
 
   const runTests = useCallback(async (source) => {
@@ -73,18 +59,24 @@ export default function useAzoraEngine(version) {
     return engineRef.current.runTests(source)
   }, [])
 
-  return {
+  return useMemo(() => ({
     loading,
     error,
     ready: !loading && !error,
     preprocess,
     interpret,
-    generateKotlin,
-    generateCSharp,
     generateJavaScript,
     generateLlvmIr,
-    generatePython,
-    generateSwift,
+    generateWasm,
     runTests,
-  }
+  }), [
+    loading,
+    error,
+    preprocess,
+    interpret,
+    generateJavaScript,
+    generateLlvmIr,
+    generateWasm,
+    runTests,
+  ])
 }

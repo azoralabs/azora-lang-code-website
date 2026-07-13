@@ -7,7 +7,6 @@ import { azoraTheme, azoraHighlight } from '../codemirror/azora-theme.js'
 import { azoraLanguage } from '../codemirror/azora-language.js'
 
 import { javascript } from '@codemirror/lang-javascript'
-import { python } from '@codemirror/lang-python'
 import { kotlin } from '@codemirror/legacy-modes/mode/clike'
 
 const readOnlyTheme = EditorView.theme({
@@ -76,16 +75,13 @@ function ReadOnlyCodeMirror({ code, extensions = [] }) {
 
 const languageExtensions = {
   azora: [azoraLanguage],
-  kotlin: [StreamLanguage.define(kotlin)],
-  typescript: [javascript({ typescript: true })],
-  javascript: [javascript({ typescript: true })],
-  csharp: [StreamLanguage.define(kotlin)],
-  python: [python()],
-  swift: [StreamLanguage.define(kotlin)],
+  javascript: [javascript()],
+  wasm: [],
   llvm: [StreamLanguage.define(llvmMode)],
+  clike: [StreamLanguage.define(kotlin)],
 }
 
-export default function CodeView({ code, language = 'kotlin' }) {
+export default function CodeView({ code, language = 'javascript' }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {

@@ -1,7 +1,7 @@
 {
   "name": "azora-playground",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",

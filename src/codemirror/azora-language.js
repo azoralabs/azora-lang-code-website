@@ -1,11 +1,18 @@
 import { StreamLanguage } from '@codemirror/language'
 
 const keywords = new Set([
-  'var', 'let', 'fin', 'func', 'return', 'package', 'if', 'else',
+  'var', 'let', 'fin', 'func', 'return', 'package', 'module', 'if', 'else',
   'inline', 'deepinline', 'noinline', 'zone', 'friend', 'test',
-  'assert', 'trace', 'for', 'while', 'loop', 'in', 'break',
-  'continue', 'pack', 'enum', 'when', 'throw', 'try', 'catch',
-  'impl', 'self', 'as', 'guard', 'is', 'null', 'use',
+  'assert', 'trace', 'mixin', 'panic', 'for', 'while', 'loop', 'in', 'by', 'reverse', 'break',
+  'continue', 'shield', 'pack', 'enum', 'slot', 'when', 'throw', 'try', 'catch', 'rescue',
+  'impl', 'spec', 'self', 'as', 'guard', 'is', 'null', 'use', 'typealias',
+  'defer', 'node', 'leaf', 'repl', 'virt', 'base', 'fail',
+  'flow', 'yield', 'task', 'await', 'launch',
+  'alloc', 'drop', 'deref', 'unsafe', 'isolated', 'bridge',
+  'solo', 'inject', 'wrap', 'deco',
+  'mem', 'rem', 'ret', 'effect', 'view', 'hook', 'prop', 'ctor', 'dtor', 'flip', 'flop',
+  'oper', 'infx', 'threadlocal',
+  'expose', 'confine', 'protect', 'protected', 'shield', 'ref', 'out', 'mut', 'shared', 'weak',
 ])
 
 const types = new Set([
