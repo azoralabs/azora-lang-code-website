@@ -246,7 +246,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-az-90">
+    <div className="playground-shell h-screen flex flex-col bg-az-90">
       <Header
         version={version}
         onVersionChange={setVersion}
@@ -260,8 +260,8 @@ export default function App() {
         onLoadExample={setCode}
       />
 
-      <div className="flex-1 flex flex-col md:flex-row min-h-0">
-        <div className="flex-1 min-h-0 min-w-0 border-b md:border-b-0 md:border-r border-az-80">
+      <div className="playground-workspace flex-1 flex flex-col md:flex-row min-h-0">
+        <div className="playground-pane flex-1 min-h-0 min-w-0 border-b md:border-b-0 md:border-r border-az-80">
           <CodeEditor
             value={code}
             onChange={setCode}
@@ -270,7 +270,7 @@ export default function App() {
           />
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0">
+        <div className="playground-pane flex-1 min-h-0 min-w-0">
           <OutputPanel
             activeTab={activeTab}
             onTabChange={setActiveTab}

@@ -4,7 +4,7 @@ import ExampleSelector from './ExampleSelector.jsx'
 
 export default function Header({ version, onVersionChange, target, onTargetChange, onRun, onRunTests, onClear, isRunning, engineReady, onLoadExample }) {
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 bg-az-95 border-b border-az-80 shrink-0">
+    <header className="playground-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 bg-az-95 border-b border-az-80 shrink-0">
       <div className="flex items-center gap-2">
         <img src="/azora_logo.svg" alt="Azora" className="w-7 h-7" />
         <span className="text-az-20 font-semibold text-sm hidden sm:inline">Azora Playground</span>
