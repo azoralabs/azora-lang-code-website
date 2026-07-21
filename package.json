@@ -1,12 +1,13 @@
 {
   "name": "azora-playground",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:azls": "node scripts/test-azls.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.0",
@@ -17,6 +18,7 @@
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/language": "^6.11.0",
     "@codemirror/legacy-modes": "^6.5.2",
+    "@codemirror/lint": "^6.9.5",
     "@codemirror/search": "^6.5.0",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.36.0",

@@ -3,7 +3,7 @@
 export const codeExamples = [
   {
     title: 'Hello World',
-    code: `package playground
+    code: `module playground
 
 func main() {
     println("Hello, world!")
@@ -11,7 +11,7 @@ func main() {
   },
   {
     title: 'Variables',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var count = 0
@@ -27,7 +27,7 @@ func main() {
   },
   {
     title: 'Functions',
-    code: `package playground
+    code: `module playground
 
 func add(a: Int, b: Int): Int {
     return a + b
@@ -45,7 +45,7 @@ func main() {
   },
   {
     title: 'Control Flow',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var sum = 0
@@ -71,7 +71,7 @@ func main() {
   },
   {
     title: 'Lists',
-    code: `package playground
+    code: `module playground
 use zone std
 
 func main() {
@@ -96,7 +96,7 @@ func main() {
   },
   {
     title: 'Strings',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var name = "Azora"
@@ -110,7 +110,7 @@ func main() {
   },
   {
     title: 'Structs (pack)',
-    code: `package playground
+    code: `module playground
 use zone std
 
 pack Point {
@@ -132,7 +132,7 @@ func main() {
   },
   {
     title: 'Operators & Ranges',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var n = 10
@@ -152,7 +152,7 @@ func main() {
   },
   {
     title: 'Scopes',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var x = 1
@@ -166,7 +166,7 @@ func main() {
   },
   {
     title: 'Compile-Time Execution',
-    code: `package playground
+    code: `module playground
 
 inline func square(x: Int): Int {
     return x * x
@@ -180,7 +180,7 @@ func main() {
   },
   {
     title: 'Testing',
-    code: `package playground
+    code: `module playground
 
 func factorial(n: Int): Int {
     if n <= 1 { return 1 }
@@ -201,7 +201,7 @@ func main() {
   },
   {
     title: 'Enums & When',
-    code: `package playground
+    code: `module playground
 
 enum Light {
     Red
@@ -225,7 +225,7 @@ func main() {
   },
   {
     title: 'Tuples',
-    code: `package playground
+    code: `module playground
 
 func divmod(a: Int, b: Int): (Int, Int) {
     return (a / b, a % b)
@@ -243,7 +243,7 @@ func main() {
   },
   {
     title: 'Error Handling',
-    code: `package playground
+    code: `module playground
 
 func safeDiv(a: Int, b: Int): Int {
     if b == 0 { throw "division by zero" }
@@ -263,7 +263,7 @@ func main() {
   },
   {
     title: 'Impl Methods',
-    code: `package playground
+    code: `module playground
 use zone std
 
 pack Point {
@@ -291,7 +291,7 @@ func main() {
 
   {
     title: 'Extension Methods',
-    code: `package playground
+    code: `module playground
 
 pack Counter {
     var value: Int
@@ -315,7 +315,7 @@ func main() {
   },
   {
     title: 'Reactive mem/rem/ret',
-    code: `package playground
+    code: `module playground
 
 func main() {
     mem local: Int = 1
@@ -326,7 +326,7 @@ func main() {
   },
   {
     title: 'Iterator Loop Continue',
-    code: `package playground
+    code: `module playground
 
 pack Iter {
     var i: Int
@@ -357,7 +357,7 @@ func main() {
   },
   {
     title: 'Lambdas',
-    code: `package playground
+    code: `module playground
 
 func apply(f: (Int) -> Int, x: Int): Int {
     return f(x)
@@ -379,7 +379,7 @@ func main() {
   },
   {
     title: 'Generics',
-    code: `package playground
+    code: `module playground
 
 func<T> identity(x: T): T {
     return x
@@ -404,7 +404,7 @@ func main() {
   },
   {
     title: 'Traits (spec)',
-    code: `package playground
+    code: `module playground
 use zone std
 
 pack Point {
@@ -429,7 +429,7 @@ func main() {
   },
   {
     title: 'Operator Overloading',
-    code: `package playground
+    code: `module playground
 
 pack Vec2 {
     var x: Int
@@ -456,7 +456,7 @@ func main() {
   },
   {
     title: 'Infix Functions',
-    code: `package playground
+    code: `module playground
 
 infx Int.shl(bits: Int): Int {
     return self * bits
@@ -469,7 +469,7 @@ func main() {
   },
   {
     title: 'Bitwise Operators',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var a = 0b1100
@@ -483,7 +483,7 @@ func main() {
   },
   {
     title: 'Default Params',
-    code: `package playground
+    code: `module playground
 
 func greet(name: String, greeting: String = "Hello"): String {
     return "$greeting, $name!"
@@ -496,7 +496,7 @@ func main() {
   },
   {
     title: 'Guard',
-    code: `package playground
+    code: `module playground
 
 func half(n: Int): Int {
     guard n > 0 else { return 0 }
@@ -510,7 +510,7 @@ func main() {
   },
   {
     title: 'Nullable Types',
-    code: `package playground
+    code: `module playground
 
 func first(nums: [Int]): Int? {
     if nums.length == 0 { return null }
@@ -525,7 +525,7 @@ func main() {
   },
   {
     title: 'Maps',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var scores = ["alice": 90, "bob": 75]
@@ -538,7 +538,7 @@ func main() {
   },
   {
     title: 'Tagged Unions (slot)',
-    code: `package playground
+    code: `module playground
 
 slot Shape {
     Circle(Int)
@@ -562,7 +562,7 @@ func main() {
   },
   {
     title: 'Inheritance',
-    code: `package playground
+    code: `module playground
 
 node Animal(name: String) {
     func speak(): String {
@@ -583,7 +583,7 @@ func main() {
   },
   {
     title: 'Generators (flow)',
-    code: `package playground
+    code: `module playground
 
 flow squares(n: Int): Int {
     for i in 0..<n {
@@ -601,7 +601,7 @@ func main() {
   },
   {
     title: 'Dependency Injection',
-    code: `package playground
+    code: `module playground
 
 solo Counter {
     var n: Int = 0
@@ -618,7 +618,7 @@ func main() {
   },
   {
     title: 'Pointers',
-    code: `package playground
+    code: `module playground
 
 func main() {
     var p: Int* = alloc [10, 20, 30]
@@ -630,7 +630,7 @@ func main() {
   },
   {
     title: 'Variadic Generics',
-    code: `package playground
+    code: `module playground
 
 func<...T> sumAll(first: Int, rest: ...T): Int {
     var total = first

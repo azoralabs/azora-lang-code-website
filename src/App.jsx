@@ -1,18 +1,21 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import Header from './components/Header.jsx'
 import CodeEditor from './components/CodeEditor.jsx'
 import OutputPanel from './components/OutputPanel.jsx'
 import useAzoraEngine from './hooks/useAzoraEngine.js'
+import useAzoraLanguageServer from './hooks/useAzoraLanguageServer.js'
 import { SAMPLE_CODE } from './data/sampleCode.js'
 import { getDefaultVersion, isValidVersion } from './engine/versions.js'
 import { runJavaScript } from './engine/javascriptRunner.js'
 import { runLlvmIr } from './engine/llvmRunner.js'
+import { errorMessage } from './engine/errorMessage.js'
 
 const LS_CODE_KEY = 'azora-playground-code'
 const LS_VERSION_KEY = 'azora-playground-version'
 const LS_TARGET_KEY = 'azora-playground-target'
 const ACTIVE_TARGETS = new Set(['interpreted', 'javascript', 'wasm', 'llvm-ir'])
 const EMPTY_RESULTS = { console: [], preprocessed: '', javascript: '', llvmIr: '', wasm: '' }
+const PLAYGROUND_URI = 'azora-playground:///main.az'
 
 function loadSaved(key, fallback) {
   try {
@@ -38,8 +41,18 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('console')
   const [isRunning, setIsRunning] = useState(false)
   const [results, setResults] = useState(EMPTY_RESULTS)
+  const [activeStdDocument, setActiveStdDocument] = useState(null)
+  const [navigation, setNavigation] = useState(null)
 
   const engine = useAzoraEngine(version)
+  const azls = useAzoraLanguageServer(version)
+
+  const editorDocument = useMemo(() => {
+    if (activeStdDocument == null || !azls.server?.documents[activeStdDocument]) {
+      return { uri: PLAYGROUND_URI, path: 'main.az', source: code, readOnly: false }
+    }
+    return { ...azls.server.documents[activeStdDocument], readOnly: true }
+  }, [activeStdDocument, azls.server, code])
 
   useEffect(() => {
     try { localStorage.setItem(LS_CODE_KEY, code) } catch {}
@@ -47,6 +60,7 @@ export default function App() {
 
   useEffect(() => {
     try { localStorage.setItem(LS_VERSION_KEY, version) } catch {}
+    setActiveStdDocument(null)
   }, [version])
 
   useEffect(() => {
@@ -196,7 +210,7 @@ export default function App() {
     } catch (e) {
       setResults(prev => ({
         ...prev,
-        console: [{ text: `Unexpected error: ${e.message}`, type: 'error' }],
+        console: [{ text: `Unexpected error: ${errorMessage(e)}`, type: 'error' }],
       }))
     } finally {
       setIsRunning(false)
@@ -214,12 +228,39 @@ export default function App() {
     } catch (e) {
       setResults(prev => ({
         ...prev,
-        console: [{ text: `Unexpected error: ${e.message}`, type: 'error' }],
+        console: [{ text: `Unexpected error: ${errorMessage(e)}`, type: 'error' }],
       }))
     } finally {
       setIsRunning(false)
     }
   }, [code, engine, isRunning, parseOutput])
+
+  const handleDefinition = useCallback((target) => {
+    if (!target?.document) return
+    if (target.document.id === -1) {
+      setNavigation({
+        uri: editorDocument.uri,
+        start: target.start,
+        end: target.end,
+        nonce: Date.now(),
+      })
+      return
+    }
+    const definitionDocument = azls.server?.documents[target.document.id]
+    if (!definitionDocument) return
+    setActiveStdDocument(target.document.id)
+    setNavigation({
+      uri: definitionDocument.uri,
+      start: target.start,
+      end: target.end,
+      nonce: Date.now(),
+    })
+  }, [azls.server, editorDocument.uri])
+
+  const loadExample = useCallback((source) => {
+    setCode(source)
+    setActiveStdDocument(null)
+  }, [])
 
   if (engine.loading) {
     return (
@@ -257,17 +298,43 @@ export default function App() {
         onClear={() => setResults(EMPTY_RESULTS)}
         isRunning={isRunning}
         engineReady={engine.ready}
-        onLoadExample={setCode}
+        onLoadExample={loadExample}
       />
 
       <div className="playground-workspace flex-1 flex flex-col md:flex-row min-h-0">
         <div className="playground-pane flex-1 min-h-0 min-w-0 border-b md:border-b-0 md:border-r border-az-80">
-          <CodeEditor
-            value={code}
-            onChange={setCode}
-            onRun={handleRun}
-            onRunTests={handleRunTests}
-          />
+          <div className="editor-document-shell">
+            <div className="editor-document-bar">
+              <div className="editor-document-location">
+                {activeStdDocument != null && (
+                  <button
+                    type="button"
+                    className="editor-back-button"
+                    onClick={() => setActiveStdDocument(null)}
+                    title="Return to main.az"
+                  >
+                    Back
+                  </button>
+                )}
+                <span className="editor-document-path">{editorDocument.path}</span>
+                {editorDocument.readOnly && <span className="editor-readonly">Read only</span>}
+              </div>
+              <span className={`azls-status ${azls.error ? 'is-error' : azls.server ? 'is-ready' : ''}`}>
+                {azls.error ? 'AZLS unavailable' : azls.server ? `AZLS ${azls.server.version}` : 'Loading AZLS'}
+              </span>
+            </div>
+            <div className="editor-document-content">
+              <CodeEditor
+                document={editorDocument}
+                onChange={setCode}
+                onRun={handleRun}
+                onRunTests={handleRunTests}
+                languageServer={azls.server}
+                onDefinition={handleDefinition}
+                navigation={navigation}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="playground-pane flex-1 min-h-0 min-w-0">

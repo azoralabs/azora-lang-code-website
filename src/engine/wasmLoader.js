@@ -1,4 +1,6 @@
 
+import { errorMessage } from './errorMessage.js'
+
 export async function loadWasmEngine(version) {
   const basePath = `${import.meta.env.BASE_URL}wasm/${version}`
   const cacheBust = `?t=${Date.now()}`
@@ -21,7 +23,7 @@ export async function loadWasmEngine(version) {
     try {
       return JSON.parse(fn())
     } catch (e) {
-      return { success: false, output: '', errors: e.message || String(e) }
+      return { success: false, output: '', errors: errorMessage(e, 'Compiler request failed') }
     }
   }
 
@@ -29,7 +31,7 @@ export async function loadWasmEngine(version) {
     try {
       return JSON.parse(await fn())
     } catch (e) {
-      return { success: false, output: '', errors: e.message || String(e) }
+      return { success: false, output: '', errors: errorMessage(e, 'Compiler request failed') }
     }
   }
 

@@ -1,0 +1,629 @@
+/*
+ * Copyright 2026 AzoraLabs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ */
+
+module azora.language.server
+
+/**
+ * Browser AZLS implementation compiled from Azora to WebAssembly.
+ *
+ * Results refer to immutable document ranges instead of copying source text.
+ * Document `-1` is the active editor; non-negative IDs address entries in the
+ * versioned workspace corpus supplied by the browser.
+ */
+
+func azlsVersion(): String { return "0.0.4" }
+
+/** Allocates an ABI-compatible UTF-8 input buffer for the browser host. */
+func azlsReserve(size: Int): String { return " " * size }
+
+func fieldMarker(): String { return "<:AZLS-FIELD:>" }
+func recordMarker(): String { return "<:AZLS-RECORD:>" }
+
+func isSpace(c: Char): Bool {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+func isIdentifierStart(c: Char): Bool { return isAlpha(c) || c == '_' }
+func isIdentifierPart(c: Char): Bool { return isIdentifierStart(c) || isDigit(c) }
+
+func rangeEquals(
+    left: String,
+    leftStart: Int,
+    leftEnd: Int,
+    right: String,
+    rightStart: Int,
+    rightEnd: Int
+): Bool {
+    fin length = leftEnd - leftStart
+    if length != rightEnd - rightStart { return false }
+    var index = 0
+    while index < length {
+        if charAt(left, leftStart + index) != charAt(right, rightStart + index) { return false }
+        index += 1
+    }
+    return true
+}
+
+func rangeIs(source: String, start: Int, end: Int, literal: String): Bool {
+    return rangeEquals(source, start, end, literal, 0, stringLength(literal))
+}
+
+func rangeStarts(source: String, start: Int, end: Int, literal: String): Bool {
+    fin length = stringLength(literal)
+    if start + length > end { return false }
+    return rangeEquals(source, start, start + length, literal, 0, length)
+}
+
+func findFrom(source: String, start: Int, end: Int, needle: String): Int {
+    fin needleLength = stringLength(needle)
+    if needleLength == 0 { return start }
+    var index = start
+    while index + needleLength <= end {
+        if rangeEquals(source, index, index + needleLength, needle, 0, needleLength) { return index }
+        index += 1
+    }
+    return -1
+}
+
+func isKeywordRange(source: String, start: Int, end: Int): Bool {
+    return rangeIs(source, start, end, "var") || rangeIs(source, start, end, "fin") ||
+        rangeIs(source, start, end, "let") || rangeIs(source, start, end, "func") ||
+        rangeIs(source, start, end, "return") || rangeIs(source, start, end, "if") ||
+        rangeIs(source, start, end, "else") || rangeIs(source, start, end, "inline") ||
+        rangeIs(source, start, end, "deepinline") || rangeIs(source, start, end, "noinline") ||
+        rangeIs(source, start, end, "zone") || rangeIs(source, start, end, "friend") ||
+        rangeIs(source, start, end, "test") || rangeIs(source, start, end, "assert") ||
+        rangeIs(source, start, end, "trace") || rangeIs(source, start, end, "panic") ||
+        rangeIs(source, start, end, "meta") || rangeIs(source, start, end, "for") ||
+        rangeIs(source, start, end, "while") || rangeIs(source, start, end, "loop") ||
+        rangeIs(source, start, end, "in") || rangeIs(source, start, end, "by") ||
+        rangeIs(source, start, end, "reverse") || rangeIs(source, start, end, "break") ||
+        rangeIs(source, start, end, "continue") || rangeIs(source, start, end, "pack") ||
+        rangeIs(source, start, end, "enum") || rangeIs(source, start, end, "when") ||
+        rangeIs(source, start, end, "throw") || rangeIs(source, start, end, "try") ||
+        rangeIs(source, start, end, "catch") || rangeIs(source, start, end, "rescue") ||
+        rangeIs(source, start, end, "impl") || rangeIs(source, start, end, "spec") ||
+        rangeIs(source, start, end, "defer") || rangeIs(source, start, end, "type") ||
+        rangeIs(source, start, end, "typealias") || rangeIs(source, start, end, "slot") ||
+        rangeIs(source, start, end, "use") || rangeIs(source, start, end, "import") ||
+        rangeIs(source, start, end, "as") || rangeIs(source, start, end, "guard") ||
+        rangeIs(source, start, end, "is") || rangeIs(source, start, end, "infx") ||
+        rangeIs(source, start, end, "oper") || rangeIs(source, start, end, "fail") ||
+        rangeIs(source, start, end, "alloc") || rangeIs(source, start, end, "drop") ||
+        rangeIs(source, start, end, "deref") || rangeIs(source, start, end, "unsafe") ||
+        rangeIs(source, start, end, "isolated") || rangeIs(source, start, end, "flow") ||
+        rangeIs(source, start, end, "yield") || rangeIs(source, start, end, "task") ||
+        rangeIs(source, start, end, "await") || rangeIs(source, start, end, "launch") ||
+        rangeIs(source, start, end, "bridge") || rangeIs(source, start, end, "solo") ||
+        rangeIs(source, start, end, "inject") || rangeIs(source, start, end, "wrap") ||
+        rangeIs(source, start, end, "node") || rangeIs(source, start, end, "leaf") ||
+        rangeIs(source, start, end, "abstract") || rangeIs(source, start, end, "repl") ||
+        rangeIs(source, start, end, "virt") || rangeIs(source, start, end, "base") ||
+        rangeIs(source, start, end, "mem") || rangeIs(source, start, end, "rem") ||
+        rangeIs(source, start, end, "ret") || rangeIs(source, start, end, "effect") ||
+        rangeIs(source, start, end, "view") || rangeIs(source, start, end, "hook") ||
+        rangeIs(source, start, end, "prop") || rangeIs(source, start, end, "ctor") ||
+        rangeIs(source, start, end, "dtor") || rangeIs(source, start, end, "flip") ||
+        rangeIs(source, start, end, "flop") || rangeIs(source, start, end, "ref") ||
+        rangeIs(source, start, end, "out") || rangeIs(source, start, end, "mut") ||
+        rangeIs(source, start, end, "shared") || rangeIs(source, start, end, "weak") ||
+        rangeIs(source, start, end, "expose") || rangeIs(source, start, end, "confine") ||
+        rangeIs(source, start, end, "protect") || rangeIs(source, start, end, "shield") ||
+        rangeIs(source, start, end, "intern") || rangeIs(source, start, end, "opaque") ||
+        rangeIs(source, start, end, "module") || rangeIs(source, start, end, "export") ||
+        rangeIs(source, start, end, "threadlocal") || rangeIs(source, start, end, "deco") ||
+        rangeIs(source, start, end, "bind") || rangeIs(source, start, end, "true") ||
+        rangeIs(source, start, end, "false") || rangeIs(source, start, end, "null")
+}
+
+func isDeclarationRange(source: String, start: Int, end: Int): Bool {
+    return rangeIs(source, start, end, "func") || rangeIs(source, start, end, "task") ||
+        rangeIs(source, start, end, "flow") || rangeIs(source, start, end, "pack") ||
+        rangeIs(source, start, end, "enum") || rangeIs(source, start, end, "spec") ||
+        rangeIs(source, start, end, "deco") || rangeIs(source, start, end, "node") ||
+        rangeIs(source, start, end, "solo") || rangeIs(source, start, end, "prop") ||
+        rangeIs(source, start, end, "hook") || rangeIs(source, start, end, "var") ||
+        rangeIs(source, start, end, "fin") || rangeIs(source, start, end, "let") ||
+        rangeIs(source, start, end, "fail") || rangeIs(source, start, end, "typealias")
+}
+
+func declarationKind(source: String, start: Int, end: Int): String {
+    if rangeIs(source, start, end, "func") || rangeIs(source, start, end, "task") ||
+        rangeIs(source, start, end, "flow") || rangeIs(source, start, end, "hook") { return "function" }
+    if rangeIs(source, start, end, "pack") || rangeIs(source, start, end, "node") ||
+        rangeIs(source, start, end, "solo") || rangeIs(source, start, end, "typealias") { return "type" }
+    if rangeIs(source, start, end, "enum") { return "enum" }
+    if rangeIs(source, start, end, "spec") { return "interface" }
+    if rangeIs(source, start, end, "deco") { return "annotation" }
+    if rangeIs(source, start, end, "prop") { return "property" }
+    return "variable"
+}
+
+func lineNumberAt(source: String, documentStart: Int, offset: Int): Int {
+    var line = 1
+    var index = documentStart
+    while index < offset {
+        if charAt(source, index) == '\n' { line += 1 }
+        index += 1
+    }
+    return line
+}
+
+func lineStartAt(source: String, documentStart: Int, offset: Int): Int {
+    var index = offset
+    while index > documentStart && charAt(source, index - 1) != '\n' { index -= 1 }
+    return index
+}
+
+func lineEndAt(source: String, documentEnd: Int, offset: Int): Int {
+    var index = offset
+    while index < documentEnd && charAt(source, index) != '\n' { index += 1 }
+    return index
+}
+
+func wordStartAt(source: String, documentStart: Int, documentEnd: Int, offset: Int): Int {
+    var index = offset
+    if index >= documentEnd { index = documentEnd - 1 }
+    if index >= documentStart && !isIdentifierPart(charAt(source, index)) && index > documentStart { index -= 1 }
+    while index > documentStart && isIdentifierPart(charAt(source, index - 1)) { index -= 1 }
+    return index
+}
+
+func wordEndAt(source: String, documentEnd: Int, offset: Int): Int {
+    var index = offset
+    while index < documentEnd && isIdentifierPart(charAt(source, index)) { index += 1 }
+    return index
+}
+
+func skipString(source: String, documentEnd: Int, start: Int): Int {
+    fin quote = charAt(source, start)
+    var index = start + 1
+    while index < documentEnd {
+        if charAt(source, index) == '\\' { index += 2 }
+        else if charAt(source, index) == quote { return index + 1 }
+        else { index += 1 }
+    }
+    return documentEnd
+}
+
+func skipComment(source: String, documentEnd: Int, start: Int): Int {
+    if start + 1 >= documentEnd || charAt(source, start) != '/' { return start }
+    if charAt(source, start + 1) == '/' {
+        var index = start + 2
+        while index < documentEnd && charAt(source, index) != '\n' { index += 1 }
+        return index
+    }
+    if charAt(source, start + 1) == '*' {
+        var index = start + 2
+        var depth = 1
+        while index < documentEnd && depth > 0 {
+            if index + 1 < documentEnd && charAt(source, index) == '/' && charAt(source, index + 1) == '*' {
+                depth += 1
+                index += 2
+            }
+            else if index + 1 < documentEnd && charAt(source, index) == '*' && charAt(source, index + 1) == '/' {
+                depth -= 1
+                index += 2
+            }
+            else { index += 1 }
+        }
+        return index
+    }
+    return start
+}
+
+func addHighlight(result: String, start: Int, end: Int, kind: String): String {
+    fin comma = if result == "[" { "" } else { "," }
+    return result + comma + "{\"start\":" + "${start}" + ",\"end\":" + "${end}" +
+        ",\"type\":\"" + kind + "\"}"
+}
+
+/** Semantic highlighting generated entirely by AZLS. */
+func azlsHighlight(source: String): String {
+    var result = "["
+    var index = 0
+    var declarationExpected = false
+    while index < stringLength(source) {
+        fin c = charAt(source, index)
+        if isSpace(c) { index += 1 }
+        else if c == '/' {
+            fin end = skipComment(source, stringLength(source), index)
+            if end > index {
+                result = addHighlight(result, index, end, "comment")
+                index = end
+            }
+            else { index += 1 }
+        }
+        else if c == '"' || c == '\'' {
+            fin end = skipString(source, stringLength(source), index)
+            result = addHighlight(result, index, end, if c == '"' { "string" } else { "char" })
+            index = end
+        }
+        else if c == '@' {
+            fin start = index
+            index += 1
+            while index < stringLength(source) && isIdentifierPart(charAt(source, index)) { index += 1 }
+            result = addHighlight(result, start, index, "annotation")
+        }
+        else if isDigit(c) {
+            fin start = index
+            index += 1
+            while index < stringLength(source) {
+                fin n = charAt(source, index)
+                if isDigit(n) || n == '_' || n == '.' { index += 1 } else { break }
+            }
+            result = addHighlight(result, start, index, "number")
+        }
+        else if isIdentifierStart(c) {
+            fin start = index
+            index += 1
+            while index < stringLength(source) && isIdentifierPart(charAt(source, index)) { index += 1 }
+            var kind = "identifier"
+            if isKeywordRange(source, start, index) { kind = "keyword" }
+            else if declarationExpected { kind = "definition" }
+            else if ord(charAt(source, start)) >= 65 && ord(charAt(source, start)) <= 90 { kind = "type" }
+            else {
+                var next = index
+                while next < stringLength(source) && isSpace(charAt(source, next)) { next += 1 }
+                if next < stringLength(source) && charAt(source, next) == '(' { kind = "function" }
+            }
+            result = addHighlight(result, start, index, kind)
+            declarationExpected = isDeclarationRange(source, start, index)
+        }
+        else { index += 1 }
+    }
+    return result + "]"
+}
+
+func skipGenericHeader(source: String, documentEnd: Int, start: Int): Int {
+    var index = start
+    while index < documentEnd && isSpace(charAt(source, index)) { index += 1 }
+    if index >= documentEnd || charAt(source, index) != '<' { return index }
+    var depth = 1
+    index += 1
+    while index < documentEnd && depth > 0 {
+        if charAt(source, index) == '<' { depth += 1 }
+        else if charAt(source, index) == '>' { depth -= 1 }
+        index += 1
+    }
+    while index < documentEnd && isSpace(charAt(source, index)) { index += 1 }
+    return index
+}
+
+func declarationOffset(
+    source: String,
+    documentStart: Int,
+    documentEnd: Int,
+    target: String,
+    targetStart: Int,
+    targetEnd: Int
+): Int {
+    var index = documentStart
+    var expected = false
+    while index < documentEnd {
+        fin c = charAt(source, index)
+        if c == '"' || c == '\'' { index = skipString(source, documentEnd, index) }
+        else if c == '/' {
+            fin end = skipComment(source, documentEnd, index)
+            if end > index { index = end } else { index += 1 }
+        }
+        else if expected && c == '<' { index = skipGenericHeader(source, documentEnd, index) }
+        else if isIdentifierStart(c) {
+            fin start = index
+            index += 1
+            while index < documentEnd && isIdentifierPart(charAt(source, index)) { index += 1 }
+            if expected {
+                if rangeEquals(source, start, index, target, targetStart, targetEnd) { return start }
+                expected = false
+            }
+            else if isDeclarationRange(source, start, index) { expected = true }
+        }
+        else { index += 1 }
+    }
+    return -1
+}
+
+func moduleStart(source: String, documentStart: Int, documentEnd: Int): Int {
+    fin marker = "module"
+    var index = documentStart
+    while index < documentEnd {
+        fin found = findFrom(source, index, documentEnd, marker)
+        if found < 0 { return -1 }
+        fin beforeOk = found == documentStart || !isIdentifierPart(charAt(source, found - 1))
+        fin after = found + stringLength(marker)
+        fin afterOk = after >= documentEnd || !isIdentifierPart(charAt(source, after))
+        if beforeOk && afterOk {
+            index = after
+            while index < documentEnd && isSpace(charAt(source, index)) { index += 1 }
+            return index
+        }
+        index = found + 1
+    }
+    return -1
+}
+
+func moduleEnd(source: String, documentEnd: Int, start: Int): Int {
+    var index = start
+    while index < documentEnd {
+        fin c = charAt(source, index)
+        if isIdentifierPart(c) || c == '.' { index += 1 } else { break }
+    }
+    return index
+}
+
+func importStart(source: String, offset: Int): Int {
+    var lineStart = offset
+    while lineStart > 0 && charAt(source, lineStart - 1) != '\n' { lineStart -= 1 }
+    var lineEnd = offset
+    while lineEnd < stringLength(source) && charAt(source, lineEnd) != '\n' { lineEnd += 1 }
+    var index = lineStart
+    while index < lineEnd && isSpace(charAt(source, index)) { index += 1 }
+    if rangeStarts(source, index, lineEnd, "import") { index += 6 }
+    else if rangeStarts(source, index, lineEnd, "use") { index += 3 }
+    else { return -1 }
+    while index < lineEnd && isSpace(charAt(source, index)) { index += 1 }
+    return index
+}
+
+func importEnd(source: String, start: Int): Int {
+    var index = start
+    while index < stringLength(source) {
+        fin c = charAt(source, index)
+        if isIdentifierPart(c) || c == '.' { index += 1 } else { break }
+    }
+    return index
+}
+
+func definitionJson(
+    document: Int,
+    source: String,
+    documentStart: Int,
+    documentEnd: Int,
+    offset: Int
+): String {
+    fin relative = offset - documentStart
+    fin lineStart = lineStartAt(source, documentStart, offset) - documentStart
+    fin lineEnd = lineEndAt(source, documentEnd, offset) - documentStart
+    fin end = wordEndAt(source, documentEnd, offset) - documentStart
+    return "{\"found\":true,\"document\":" + "${document}" + ",\"start\":" + "${relative}" +
+        ",\"end\":" + "${end}" + ",\"line\":" + "${lineNumberAt(source, documentStart, offset)}" +
+        ",\"column\":" + "${offset - lineStartAt(source, documentStart, offset) + 1}" +
+        ",\"detailStart\":" + "${lineStart}" + ",\"detailEnd\":" + "${lineEnd}" + "}"
+}
+
+func corpusDefinition(
+    corpus: String,
+    target: String,
+    targetStart: Int,
+    targetEnd: Int,
+    moduleLookup: Bool
+): String {
+    var cursor = 0
+    var document = 0
+    while cursor < stringLength(corpus) {
+        fin field = findFrom(corpus, cursor, stringLength(corpus), fieldMarker())
+        if field < 0 { break }
+        fin sourceStart = field + stringLength(fieldMarker())
+        var sourceEnd = findFrom(corpus, sourceStart, stringLength(corpus), recordMarker())
+        if sourceEnd < 0 { sourceEnd = stringLength(corpus) }
+        if moduleLookup {
+            fin candidate = moduleStart(corpus, sourceStart, sourceEnd)
+            if candidate >= 0 {
+                fin candidateEnd = moduleEnd(corpus, sourceEnd, candidate)
+                if rangeEquals(corpus, candidate, candidateEnd, target, targetStart, targetEnd) {
+                    return definitionJson(document, corpus, sourceStart, sourceEnd, candidate)
+                }
+            }
+        }
+        else {
+            fin found = declarationOffset(corpus, sourceStart, sourceEnd, target, targetStart, targetEnd)
+            if found >= 0 { return definitionJson(document, corpus, sourceStart, sourceEnd, found) }
+        }
+        cursor = sourceEnd + stringLength(recordMarker())
+        document += 1
+    }
+    return "{\"found\":false}"
+}
+
+/** Resolves local declarations, imports, and symbols in the stdlib corpus. */
+func azlsDefinition(source: String, offset: Int, corpus: String): String {
+    fin imported = importStart(source, offset)
+    if imported >= 0 {
+        return corpusDefinition(corpus, source, imported, importEnd(source, imported), true)
+    }
+    if stringLength(source) == 0 { return "{\"found\":false}" }
+    fin start = wordStartAt(source, 0, stringLength(source), offset)
+    fin end = wordEndAt(source, stringLength(source), start)
+    if end <= start { return "{\"found\":false}" }
+    fin local = declarationOffset(source, 0, stringLength(source), source, start, end)
+    if local >= 0 { return definitionJson(-1, source, 0, stringLength(source), local) }
+    return corpusDefinition(corpus, source, start, end, false)
+}
+
+/** Hover uses the same authoritative declaration range as go-to-definition. */
+func azlsHover(source: String, offset: Int, corpus: String): String {
+    return azlsDefinition(source, offset, corpus)
+}
+
+func appendCompletion(
+    result: String,
+    document: Int,
+    documentStart: Int,
+    nameStart: Int,
+    nameEnd: Int,
+    detailStart: Int,
+    detailEnd: Int,
+    kind: String
+): String {
+    fin comma = if result == "[" { "" } else { "," }
+    return result + comma + "{\"document\":" + "${document}" + ",\"start\":" +
+        "${nameStart - documentStart}" + ",\"end\":" + "${nameEnd - documentStart}" +
+        ",\"detailStart\":" + "${detailStart - documentStart}" + ",\"detailEnd\":" +
+        "${detailEnd - documentStart}" + ",\"kind\":\"" + kind + "\"}"
+}
+
+func completionStartAt(source: String, offset: Int): Int {
+    var index = offset
+    if index > stringLength(source) { index = stringLength(source) }
+    while index > 0 && isIdentifierPart(charAt(source, index - 1)) { index -= 1 }
+    return index
+}
+
+func completionMatches(
+    candidateSource: String,
+    candidateStart: Int,
+    candidateEnd: Int,
+    prefixSource: String,
+    prefixStart: Int,
+    prefixEnd: Int
+): Bool {
+    fin prefixLength = prefixEnd - prefixStart
+    if prefixLength == 0 { return true }
+    if candidateEnd - candidateStart < prefixLength { return false }
+    return rangeEquals(
+        candidateSource,
+        candidateStart,
+        candidateStart + prefixLength,
+        prefixSource,
+        prefixStart,
+        prefixEnd
+    )
+}
+
+func collectCompletions(
+    source: String,
+    document: Int,
+    documentStart: Int,
+    documentEnd: Int,
+    prefixSource: String,
+    prefixStart: Int,
+    prefixEnd: Int,
+    resultInput: String
+): String {
+    var result = resultInput
+    var index = documentStart
+    var keywordStart = -1
+    var keywordEnd = -1
+    while index < documentEnd && stringLength(result) < 6000 {
+        fin c = charAt(source, index)
+        if c == '"' || c == '\'' { index = skipString(source, documentEnd, index) }
+        else if c == '/' {
+            fin end = skipComment(source, documentEnd, index)
+            if end > index { index = end } else { index += 1 }
+        }
+        else if keywordStart >= 0 && c == '<' { index = skipGenericHeader(source, documentEnd, index) }
+        else if isIdentifierStart(c) {
+            fin start = index
+            index += 1
+            while index < documentEnd && isIdentifierPart(charAt(source, index)) { index += 1 }
+            if keywordStart >= 0 {
+                if completionMatches(source, start, index, prefixSource, prefixStart, prefixEnd) {
+                    result = appendCompletion(
+                        result,
+                        document,
+                        documentStart,
+                        start,
+                        index,
+                        lineStartAt(source, documentStart, start),
+                        lineEndAt(source, documentEnd, start),
+                        declarationKind(source, keywordStart, keywordEnd)
+                    )
+                }
+                keywordStart = -1
+                keywordEnd = -1
+            }
+            else if isDeclarationRange(source, start, index) {
+                keywordStart = start
+                keywordEnd = index
+            }
+        }
+        else { index += 1 }
+    }
+    return result
+}
+
+/** Completion items reference ranges in the active file or stdlib corpus. */
+func azlsComplete(source: String, offset: Int, corpus: String): String {
+    var prefixEnd = offset
+    if prefixEnd > stringLength(source) { prefixEnd = stringLength(source) }
+    if prefixEnd < 0 { prefixEnd = 0 }
+    fin prefixStart = completionStartAt(source, prefixEnd)
+    var result = collectCompletions(
+        source,
+        -1,
+        0,
+        stringLength(source),
+        source,
+        prefixStart,
+        prefixEnd,
+        "["
+    )
+    if prefixEnd == prefixStart { return result + "]" }
+    var cursor = 0
+    var document = 0
+    while cursor < stringLength(corpus) && stringLength(result) < 6000 {
+        fin field = findFrom(corpus, cursor, stringLength(corpus), fieldMarker())
+        if field < 0 { break }
+        fin sourceStart = field + stringLength(fieldMarker())
+        var sourceEnd = findFrom(corpus, sourceStart, stringLength(corpus), recordMarker())
+        if sourceEnd < 0 { sourceEnd = stringLength(corpus) }
+        result = collectCompletions(
+            corpus,
+            document,
+            sourceStart,
+            sourceEnd,
+            source,
+            prefixStart,
+            prefixEnd,
+            result
+        )
+        cursor = sourceEnd + stringLength(recordMarker())
+        document += 1
+    }
+    return result + "]"
+}
+
+/** Error-tolerant structural diagnostics provided by AZLS. */
+func azlsDiagnostics(source: String): String {
+    var braces = 0
+    var brackets = 0
+    var parens = 0
+    var index = 0
+    while index < stringLength(source) {
+        fin c = charAt(source, index)
+        if c == '"' || c == '\'' {
+            fin end = skipString(source, stringLength(source), index)
+            if end >= stringLength(source) && charAt(source, stringLength(source) - 1) != c {
+                return "[{\"line\":" + "${lineNumberAt(source, 0, index)}" +
+                    ",\"message\":\"Unterminated string\",\"severity\":\"error\"}]"
+            }
+            index = end
+        }
+        else if c == '/' {
+            fin end = skipComment(source, stringLength(source), index)
+            if end > index { index = end } else { index += 1 }
+        }
+        else {
+            if c == '{' { braces += 1 }
+            else if c == '}' { braces -= 1 }
+            else if c == '[' { brackets += 1 }
+            else if c == ']' { brackets -= 1 }
+            else if c == '(' { parens += 1 }
+            else if c == ')' { parens -= 1 }
+            index += 1
+        }
+    }
+    if braces != 0 || brackets != 0 || parens != 0 {
+        return "[{\"line\":1,\"message\":\"Unbalanced delimiter\",\"severity\":\"error\"}]"
+    }
+    return "[]"
+}
+
+/** Document outline; labels and details are source ranges. */
+func azlsSymbols(source: String): String {
+    return collectCompletions(source, -1, 0, stringLength(source), "", 0, 0, "[") + "]"
+}

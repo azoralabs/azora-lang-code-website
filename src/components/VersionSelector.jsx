@@ -4,6 +4,7 @@ export default function VersionSelector({ version, onChange }) {
   return (
     <span className="azora-select-wrap">
       <select
+        aria-label="Azora version"
         value={version}
         onChange={(e) => onChange(e.target.value)}
         className="azora-select bg-az-80 text-az-20 border border-az-70 rounded-md px-2 py-1 text-sm font-mono

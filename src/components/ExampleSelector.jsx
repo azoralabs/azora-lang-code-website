@@ -7,6 +7,7 @@ export default function ExampleSelector({ onSelect }) {
   return (
     <span className="azora-select-wrap">
       <select
+        aria-label="Example"
         value={selected}
         onChange={e => {
           const idx = Number(e.target.value)

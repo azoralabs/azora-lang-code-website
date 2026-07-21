@@ -8,6 +8,29 @@ export const azoraTheme = EditorView.theme({
   '.cm-content': {
     caretColor: '#D14EEA',
   },
+  '.cm-azls-keyword': {
+    color: '#D16B8E',
+    fontWeight: '700',
+  },
+  '.cm-azls-definition, .cm-azls-function': {
+    color: '#D4A574',
+  },
+  '.cm-azls-type': {
+    color: '#5FA89F',
+  },
+  '.cm-azls-string, .cm-azls-char': {
+    color: '#7DBF8A',
+  },
+  '.cm-azls-comment': {
+    color: '#676767',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-annotation': {
+    color: '#E6C96B',
+  },
+  '.cm-azls-number': {
+    color: '#D9DADA',
+  },
   '.cm-cursor, .cm-dropCursor': {
     borderLeftColor: '#D14EEA',
   },
@@ -74,6 +97,9 @@ export const azoraTheme = EditorView.theme({
     '& > ul > li[aria-selected]': {
       backgroundColor: '#4E93EA33',
     },
+  },
+  '.cm-diagnosticText': {
+    fontFamily: 'var(--font-sans)',
   },
 }, { dark: true })
 

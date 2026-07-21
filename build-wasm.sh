@@ -3,8 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AZORA_LANG="$(cd "$SCRIPT_DIR/../azora-lang" && pwd)"
-VERSION="0.0.3"
+VERSION="$(node -p "require('./package.json').version")"
 DEST="$SCRIPT_DIR/public/wasm/$VERSION"
+AZLS_DEST="$SCRIPT_DIR/public/azls/$VERSION"
 
 echo "Building WASM bundle for Azora $VERSION..."
 cd "$AZORA_LANG"
@@ -22,5 +23,10 @@ mkdir -p "$DEST"
 rm -rf "$DEST"/*
 cp "$SRC"/* "$DEST"/
 
-echo "WASM bundle built and copied successfully."
+echo "Building the Azora-written language server..."
+"$AZORA_LANG/azls/build-wasm.sh" "$AZLS_DEST"
+node "$SCRIPT_DIR/scripts/build-stdlib-manifest.mjs" "$VERSION"
+
+echo "Compiler and AZLS WASM bundles built and copied successfully."
 ls -la "$DEST"
+ls -la "$AZLS_DEST"

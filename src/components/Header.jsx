@@ -8,7 +8,7 @@ export default function Header({ version, onVersionChange, target, onTargetChang
       <div className="flex items-center gap-2">
         <img src="/azora_logo.svg" alt="Azora" className="w-7 h-7" />
         <span className="text-az-20 font-semibold text-sm hidden sm:inline">Azora Playground</span>
-        <span className="text-[10px] text-az-60 border border-az-70 rounded px-1.5 py-0.5 hidden sm:inline">v0.0.3</span>
+        <span className="text-[10px] text-az-60 border border-az-70 rounded px-1.5 py-0.5 hidden sm:inline">v0.0.4</span>
       </div>
 
       <VersionSelector version={version} onChange={onVersionChange} />
