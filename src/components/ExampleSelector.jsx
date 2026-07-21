@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { codeExamples } from '../data/codeExamples.js'
+import { engineExamples } from '../data/engineExamples.js'
 
-export default function ExampleSelector({ onSelect }) {
+export default function ExampleSelector({ onSelect, target }) {
   const [selected, setSelected] = useState(0)
+  const examples = target === 'engine-wasm' ? engineExamples : codeExamples
+
+  useEffect(() => setSelected(0), [target])
 
   return (
     <span className="azora-select-wrap">
@@ -12,12 +16,12 @@ export default function ExampleSelector({ onSelect }) {
         onChange={e => {
           const idx = Number(e.target.value)
           setSelected(idx)
-          onSelect(codeExamples[idx].code)
+          onSelect(examples[idx].code)
         }}
         className="azora-select bg-az-80 text-az-20 border border-az-70 rounded-md px-2 py-1 text-sm
                    focus:outline-none focus:border-az-primary cursor-pointer"
       >
-        {codeExamples.map((ex, i) => (
+        {examples.map((ex, i) => (
           <option key={i} value={i}>{ex.title}</option>
         ))}
       </select>

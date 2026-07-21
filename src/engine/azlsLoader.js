@@ -13,6 +13,12 @@ function wasmImports() {
       print_f32: ignore,
       print_bool: ignore,
       print_str: ignore,
+      write_i32: ignore,
+      write_i64: ignore,
+      write_f64: ignore,
+      write_f32: ignore,
+      write_bool: ignore,
+      write_str: ignore,
     },
   }
 }

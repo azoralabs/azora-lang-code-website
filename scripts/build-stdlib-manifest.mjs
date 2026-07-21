@@ -9,6 +9,7 @@ const packageMetadata = JSON.parse(
 )
 const version = process.argv[2] || packageMetadata.version
 const stdlibRoot = path.resolve(repositoryRoot, '../azora-lang/std')
+const engineRoot = path.resolve(repositoryRoot, '../azora-engine/engine')
 const outputFile = path.resolve(
   repositoryRoot,
   process.argv[3] || `public/azls/${version}/stdlib.json`,
@@ -28,7 +29,7 @@ const files = (await collectAzoraFiles(stdlibRoot)).sort((left, right) =>
   left.localeCompare(right),
 )
 
-const documents = await Promise.all(files.map(async (absolutePath) => {
+const stdlibDocuments = await Promise.all(files.map(async (absolutePath) => {
   const relativePath = path.relative(stdlibRoot, absolutePath).split(path.sep).join('/')
   return {
     uri: `azora-stdlib:///std/${relativePath}`,
@@ -37,6 +38,20 @@ const documents = await Promise.all(files.map(async (absolutePath) => {
   }
 }))
 
+const engineFiles = [
+  path.join(engineRoot, 'render/az_web_render.az'),
+  path.join(engineRoot, 'shaders/az_shaders.az'),
+]
+const engineDocuments = await Promise.all(engineFiles.map(async (absolutePath) => {
+  const relativePath = path.relative(engineRoot, absolutePath).split(path.sep).join('/')
+  return {
+    uri: `azora-engine:///engine/render/${relativePath}`,
+    path: `engine/render/${relativePath}`,
+    source: await readFile(absolutePath, 'utf8'),
+  }
+}))
+const documents = [...stdlibDocuments, ...engineDocuments]
+
 await mkdir(path.dirname(outputFile), { recursive: true })
 await writeFile(outputFile, `${JSON.stringify({ version, documents })}\n`)
-console.log(`Bundled ${documents.length} Azora stdlib documents for ${version}.`)
+console.log(`Bundled ${stdlibDocuments.length} stdlib and ${engineDocuments.length} engine documents for ${version}.`)

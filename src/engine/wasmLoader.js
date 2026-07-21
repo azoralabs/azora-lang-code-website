@@ -35,29 +35,40 @@ export async function loadWasmEngine(version) {
     }
   }
 
+  const librariesOf = (library) => Array.isArray(library) ? library : [library]
+  const encodeLibraries = (library) => librariesOf(library)
+    .map(({ path, source }) => `${path.length}:${path}${source.length}:${source}`)
+    .join('')
+  const withLibraryArgs = (source, library) => [source, library.path, library.source]
+  const callWithLibraries = (singleName, multipleName, source, library) => {
+    if (!library) return ns[singleName](source)
+    if (Array.isArray(library)) return ns[multipleName](source, encodeLibraries(library))
+    return ns[`${singleName}WithLibrary`](...withLibraryArgs(source, library))
+  }
+
   return {
-    preprocess(source) {
-      return safeJson(() => ns.azPreprocess(source))
+    preprocess(source, library = null) {
+      return safeJson(() => callWithLibraries('azPreprocess', 'azPreprocessWithLibraries', source, library))
     },
 
-    async interpret(source) {
-      return safeJsonAsync(() => ns.azInterpret(source))
+    async interpret(source, library = null) {
+      return safeJsonAsync(() => callWithLibraries('azInterpret', 'azInterpretWithLibraries', source, library))
     },
 
-    generateJavaScript(source) {
-      return safeJson(() => ns.azGenerateJavaScript(source))
+    generateJavaScript(source, library = null) {
+      return safeJson(() => callWithLibraries('azGenerateJavaScript', 'azGenerateJavaScriptWithLibraries', source, library))
     },
 
-    generateLlvmIr(source) {
-      return safeJson(() => ns.azGenerateLlvmIr(source))
+    generateLlvmIr(source, library = null) {
+      return safeJson(() => callWithLibraries('azGenerateLlvmIr', 'azGenerateLlvmIrWithLibraries', source, library))
     },
 
-    generateWasm(source) {
-      return safeJson(() => ns.azGenerateWasm(source))
+    generateWasm(source, library = null) {
+      return safeJson(() => callWithLibraries('azGenerateWasm', 'azGenerateWasmWithLibraries', source, library))
     },
 
-    async runTests(source) {
-      return safeJsonAsync(() => ns.azRunTests(source))
+    async runTests(source, library = null) {
+      return safeJsonAsync(() => callWithLibraries('azRunTests', 'azRunTestsWithLibraries', source, library))
     },
 
     getVersion() {

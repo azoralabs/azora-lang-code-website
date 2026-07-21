@@ -13,7 +13,7 @@ export default function Header({ version, onVersionChange, target, onTargetChang
 
       <VersionSelector version={version} onChange={onVersionChange} />
       <TargetSelector target={target} onChange={onTargetChange} />
-      <ExampleSelector onSelect={onLoadExample} />
+      <ExampleSelector onSelect={onLoadExample} target={target} />
 
       <div className="flex-1 min-w-0" />
 

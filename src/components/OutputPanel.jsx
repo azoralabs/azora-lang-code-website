@@ -1,6 +1,7 @@
 
 import ConsoleOutput from './ConsoleOutput.jsx'
 import CodeView from './CodeView.jsx'
+import EngineOutput from './EngineOutput.jsx'
 
 const ALL_TABS = [
   { id: 'console', label: 'Output' },
@@ -13,10 +14,11 @@ const ALL_TABS = [
 const TARGET_CODE = {
   javascript: { tab: 'javascript', key: 'javascript', language: 'javascript' },
   wasm: { tab: 'wasm', key: 'wasm', language: 'wasm' },
+  'engine-wasm': { tab: 'wasm', key: 'wasm', language: 'wasm' },
   'llvm-ir': { tab: 'llvm-ir', key: 'llvmIr', language: 'llvm' },
 }
 
-export default function OutputPanel({ activeTab, onTabChange, results, target }) {
+export default function OutputPanel({ activeTab, onTabChange, results, target, engineViewportRef, engineReady, engineError }) {
   const consoleMessages = results?.console || []
   const hasErrors = consoleMessages.some(m => m.type === 'error')
   const preprocessedCode = results?.preprocessed || ''
@@ -52,7 +54,9 @@ export default function OutputPanel({ activeTab, onTabChange, results, target })
 
       <div className="flex-1 min-h-0">
         {activeTab === 'console' && (
-          <ConsoleOutput messages={consoleMessages} />
+          target === 'engine-wasm'
+            ? <EngineOutput mountRef={engineViewportRef} messages={consoleMessages} ready={engineReady} error={engineError} />
+            : <ConsoleOutput messages={consoleMessages} />
         )}
         {activeTab === 'preprocessed' && (
           <CodeView code={preprocessedCode} language="azora" />

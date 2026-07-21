@@ -29,34 +29,34 @@ export default function useAzoraEngine(version) {
     return () => { cancelled = true }
   }, [version])
 
-  const preprocess = useCallback((source) => {
+  const preprocess = useCallback((source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.preprocess(source)
+    return engineRef.current.preprocess(source, library)
   }, [])
 
-  const interpret = useCallback(async (source) => {
+  const interpret = useCallback(async (source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.interpret(source)
+    return engineRef.current.interpret(source, library)
   }, [])
 
-  const generateJavaScript = useCallback((source) => {
+  const generateJavaScript = useCallback((source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateJavaScript(source)
+    return engineRef.current.generateJavaScript(source, library)
   }, [])
 
-  const generateLlvmIr = useCallback((source) => {
+  const generateLlvmIr = useCallback((source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateLlvmIr(source)
+    return engineRef.current.generateLlvmIr(source, library)
   }, [])
 
-  const generateWasm = useCallback((source) => {
+  const generateWasm = useCallback((source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateWasm(source)
+    return engineRef.current.generateWasm(source, library)
   }, [])
 
-  const runTests = useCallback(async (source) => {
+  const runTests = useCallback(async (source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.runTests(source)
+    return engineRef.current.runTests(source, library)
   }, [])
 
   return useMemo(() => ({

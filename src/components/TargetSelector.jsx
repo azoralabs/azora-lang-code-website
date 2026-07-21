@@ -3,6 +3,7 @@ export const TARGETS = [
   { id: 'interpreted', label: 'Interpreter' },
   { id: 'javascript', label: 'JavaScript' },
   { id: 'wasm', label: 'WebAssembly' },
+  { id: 'engine-wasm', label: 'Engine WASM' },
   { id: 'llvm-ir', label: 'LLVM IR' },
 ]
 

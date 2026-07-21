@@ -5,6 +5,12 @@
   (import "env" "print_f32" (func $print_f32 (param f32)))
   (import "env" "print_bool" (func $print_bool (param i32)))
   (import "env" "print_str" (func $print_str (param i32)))
+  (import "env" "write_i32" (func $write_i32 (param i32)))
+  (import "env" "write_i64" (func $write_i64 (param i64)))
+  (import "env" "write_f64" (func $write_f64 (param f64)))
+  (import "env" "write_f32" (func $write_f32 (param f32)))
+  (import "env" "write_bool" (func $write_bool (param i32)))
+  (import "env" "write_str" (func $write_str (param i32)))
   (memory (export "memory") 16)
   (global $__heap (mut i32) (i32.const 2616))
 
