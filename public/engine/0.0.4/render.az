@@ -10,7 +10,7 @@ import std.math
 import engine.shaders
 
 /**
- * @file engine/render/az_web_render
+ * @file engine/render/render
  *
  * Universal immediate rendering API for Azora Engine 0.0.4.
  *

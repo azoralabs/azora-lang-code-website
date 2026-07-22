@@ -7,7 +7,7 @@
 module engine.input
 
 /**
- * @file engine/input/az_input
+ * @file engine/input/input
  *
  * Cross-platform, frame-snapshotted input for keyboard, mouse, pen, touch,
  * and standard game controllers. Held state remains true across frames;

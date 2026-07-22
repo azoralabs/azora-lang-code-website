@@ -1,4 +1,4 @@
-// Azora Engine — Metal shader source (MSL), compiled at startup by az_gpu.az.
+// Azora Engine Metal shader source (MSL), compiled by the GPU backend.
 //
 // 3D: interleaved position+normal vertices, per-draw viewProj/model/color/light
 //     uniforms, simple configurable directional lambert shading.

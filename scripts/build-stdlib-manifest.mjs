@@ -9,7 +9,7 @@ const packageMetadata = JSON.parse(
 )
 const version = process.argv[2] || packageMetadata.version
 const stdlibRoot = path.resolve(repositoryRoot, '../azora-lang/std')
-const engineRoot = path.resolve(repositoryRoot, '../azora-engine/engine')
+const engineRoot = path.resolve(repositoryRoot, `src/engine/libraries/${version}`)
 const outputFile = path.resolve(
   repositoryRoot,
   process.argv[3] || `public/azls/${version}/stdlib.json`,
@@ -39,15 +39,15 @@ const stdlibDocuments = await Promise.all(files.map(async (absolutePath) => {
 }))
 
 const engineFiles = [
-  path.join(engineRoot, 'render/az_web_render.az'),
-  path.join(engineRoot, 'shaders/az_shaders.az'),
+  { file: 'render.az', path: 'engine/render/render.az' },
+  { file: 'shaders.az', path: 'engine/shaders/shaders.az' },
+  { file: 'input.az', path: 'engine/input/input.az' },
 ]
-const engineDocuments = await Promise.all(engineFiles.map(async (absolutePath) => {
-  const relativePath = path.relative(engineRoot, absolutePath).split(path.sep).join('/')
+const engineDocuments = await Promise.all(engineFiles.map(async (engineFile) => {
   return {
-    uri: `azora-engine:///engine/render/${relativePath}`,
-    path: `engine/render/${relativePath}`,
-    source: await readFile(absolutePath, 'utf8'),
+    uri: `azora-engine:///${engineFile.path}`,
+    path: engineFile.path,
+    source: await readFile(path.join(engineRoot, engineFile.file), 'utf8'),
   }
 }))
 const documents = [...stdlibDocuments, ...engineDocuments]

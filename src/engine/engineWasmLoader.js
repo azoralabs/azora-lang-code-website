@@ -1,39 +1,27 @@
-const cache = new Map()
+const bundledSources = import.meta.glob('./libraries/*/*.az', {
+  eager: true,
+  import: 'default',
+  query: '?raw',
+})
+
+const libraryFiles = Object.freeze([
+  Object.freeze({ file: 'render.az', path: 'engine/render/render.az' }),
+  Object.freeze({ file: 'shaders.az', path: 'engine/shaders/shaders.az' }),
+  Object.freeze({ file: 'input.az', path: 'engine/input/input.az' }),
+])
+
+function sourceFor(version, file) {
+  return bundledSources[`./libraries/${version}/${file}`]
+}
 
 export async function loadEngineWasmAssets(version) {
-  if (cache.has(version)) return cache.get(version)
-
-  const loading = (async () => {
-    const basePath = `${import.meta.env.BASE_URL}engine/${version}`
-    const [renderResponse, shadersResponse, inputResponse] = await Promise.all([
-      fetch(`${basePath}/az_web_render.az`),
-      fetch(`${basePath}/az_shaders.az`),
-      fetch(`${basePath}/az_input.az`),
-    ])
-
-    if (!renderResponse.ok || !shadersResponse.ok || !inputResponse.ok) {
-      throw new Error(`Azora Engine libraries could not be loaded (${renderResponse.status}/${shadersResponse.status}/${inputResponse.status})`)
+  const libraries = libraryFiles.map(({ file, path }) => {
+    const source = sourceFor(version, file)
+    if (typeof source !== 'string') {
+      throw new Error(`Azora Engine ${version} is incomplete: bundled library '${file}' is missing`)
     }
-    const [renderSource, shadersSource, inputSource] = await Promise.all([
-      renderResponse.text(),
-      shadersResponse.text(),
-      inputResponse.text(),
-    ])
+    return Object.freeze({ path, source })
+  })
 
-    return Object.freeze({
-      libraries: Object.freeze([
-        Object.freeze({ path: 'engine/render/az_web_render.az', source: renderSource }),
-        Object.freeze({ path: 'engine/shaders/az_shaders.az', source: shadersSource }),
-        Object.freeze({ path: 'engine/input/az_input.az', source: inputSource }),
-      ]),
-    })
-  })()
-
-  cache.set(version, loading)
-  try {
-    return await loading
-  } catch (error) {
-    cache.delete(version)
-    throw error
-  }
+  return Object.freeze({ libraries: Object.freeze(libraries) })
 }
