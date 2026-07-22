@@ -1,6 +1,11 @@
 import * as THREE from 'three'
+import { BrowserInput } from './browserInput.js'
 
 const TAU = Math.PI * 2
+const AUDIO_SAMPLE_RATE = 22050
+const AUDIO_SAMPLE_SCALE = 28000 / 32768
+const X_AXIS = new THREE.Vector3(1, 0, 0)
+const Y_AXIS = new THREE.Vector3(0, 1, 0)
 let wabtPromise = null
 
 function loadWabt() {
@@ -10,6 +15,19 @@ function loadWabt() {
 
 function colorChannel(value) {
   return Math.max(0, Math.min(1, Number(value) || 0))
+}
+
+function clampNumber(value, low, high) {
+  return Math.max(low, Math.min(high, Number(value) || 0))
+}
+
+function createProceduralBuffer(context, frameCount, sampleAt) {
+  const buffer = context.createBuffer(1, frameCount, AUDIO_SAMPLE_RATE)
+  const channel = buffer.getChannelData(0)
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    channel[frame] = clampNumber(sampleAt(frame), -1, 1) * AUDIO_SAMPLE_SCALE
+  }
+  return buffer
 }
 
 function shaderBody(source) {
@@ -30,10 +48,14 @@ class EngineWasmSession {
     this.renderer = null
     this.scene = null
     this.camera = null
-    this.cube = null
-    this.cubeSize = 0
+    this.drawables3d = []
+    this.frame3dCount = 0
     this.material2d = null
     this.drawables2d = []
+    this.input = null
+    this.audio = null
+    this.wheelYawQuaternion = new THREE.Quaternion()
+    this.wheelSpinQuaternion = new THREE.Quaternion()
     this.resizeObserver = null
     this.startedAt = 0
     this.pendingFrame = 0
@@ -71,6 +93,12 @@ class EngineWasmSession {
         write_bool: (value) => emit(value ? 'true' : 'false'),
         write_str: emitString,
         az_sin: Math.sin,
+        az_cos: Math.cos,
+        az_tan: Math.tan,
+        az_sqrt: Math.sqrt,
+        az_floor: Math.floor,
+        az_ceil: Math.ceil,
+        az_pow: Math.pow,
         engine__engineWebOpen2d: (width, height, vertex, fragment) => this.open2d(width, height, vertex, fragment),
         engine__engineWebOpen3d: (width, height, vertex, fragment) => this.open3d(width, height, vertex, fragment),
         engine__engineWebNextFrame: new WebAssembly.Suspending(() => this.nextFrame()),
@@ -78,9 +106,62 @@ class EngineWasmSession {
         engine__engineWebClear: (...args) => this.clear(...args),
         engine__engineWebRect: (...args) => this.rect(...args),
         engine__engineWebCircle: (...args) => this.circle(...args),
-        engine__engineWebCube: (...args) => this.drawCube(...args),
+        engine__engineWebBoxAt: (...args) => this.drawBoxAt(...args),
+        engine__engineWebCylinderAt: (...args) => this.drawCylinderAt(...args),
+        engine__engineWebWheelAt: (...args) => this.drawWheelAt(...args),
         engine__engineWebCamera: (...args) => this.configureCamera(...args),
+        engine__engineWebCameraAt: (...args) => this.configureCameraAt(...args),
+        engine__engineWebVehicleAudio: (...args) => this.updateVehicleAudio(...args),
+        engine__engineWebCrashAudio: (...args) => this.playCrashAudio(...args),
         engine__engineWebLog: emitString,
+
+        engine__input__engineInputKeyDown: (key) => this.input?.keys.has(key) ? 1 : 0,
+        engine__input__engineInputKeyPressed: (key) => this.input?.keyPressedFrame.has(key) ? 1 : 0,
+        engine__input__engineInputKeyReleased: (key) => this.input?.keyReleasedFrame.has(key) ? 1 : 0,
+        engine__input__engineInputAnyKeyDown: () => this.input?.keys.size ? 1 : 0,
+        engine__input__engineInputTextCount: () => this.input?.textFrame.length || 0,
+        engine__input__engineInputTextCodePoint: (index) => this.input?.textFrame[index] || 0,
+        engine__input__engineInputMouseX: () => this.input?.mouseFrame.x || 0,
+        engine__input__engineInputMouseY: () => this.input?.mouseFrame.y || 0,
+        engine__input__engineInputMouseDeltaX: () => this.input?.mouseFrame.dx || 0,
+        engine__input__engineInputMouseDeltaY: () => this.input?.mouseFrame.dy || 0,
+        engine__input__engineInputMouseWheelX: () => this.input?.mouseFrame.wheelX || 0,
+        engine__input__engineInputMouseWheelY: () => this.input?.mouseFrame.wheelY || 0,
+        engine__input__engineInputMouseDown: (button) => this.input?.mouseButtons.has(button) ? 1 : 0,
+        engine__input__engineInputMousePressed: (button) => this.input?.mousePressedFrame.has(button) ? 1 : 0,
+        engine__input__engineInputMouseReleased: (button) => this.input?.mouseReleasedFrame.has(button) ? 1 : 0,
+        engine__input__engineInputMouseInside: () => this.input?.mouseFrame.inside ? 1 : 0,
+        engine__input__engineInputPointerLocked: () => document.pointerLockElement === this.canvas ? 1 : 0,
+        engine__input__engineInputRequestPointerLock: () => this.input?.requestPointerLock() ? 1 : 0,
+        engine__input__engineInputReleasePointerLock: () => this.input?.releasePointerLock(),
+        engine__input__engineInputPointerKind: () => this.input?.pointerFrame.kind ?? -1,
+        engine__input__engineInputPointerId: () => this.input?.pointerFrame.id ?? -1,
+        engine__input__engineInputPointerX: () => this.input?.pointerFrame.x || 0,
+        engine__input__engineInputPointerY: () => this.input?.pointerFrame.y || 0,
+        engine__input__engineInputPointerDeltaX: () => this.input?.pointerFrame.dx || 0,
+        engine__input__engineInputPointerDeltaY: () => this.input?.pointerFrame.dy || 0,
+        engine__input__engineInputPointerPressure: () => this.input?.pointerFrame.pressure || 0,
+        engine__input__engineInputPointerDown: () => this.input?.pointerFrame.down ? 1 : 0,
+        engine__input__engineInputPointerPressed: () => this.input?.pointerPressedFrame ? 1 : 0,
+        engine__input__engineInputPointerReleased: () => this.input?.pointerReleasedFrame ? 1 : 0,
+        engine__input__engineInputTouchCount: () => this.input?.touchFrame.length || 0,
+        engine__input__engineInputTouchId: (index) => this.input?.touch(index)?.id ?? -1,
+        engine__input__engineInputTouchX: (index) => this.input?.touch(index)?.x || 0,
+        engine__input__engineInputTouchY: (index) => this.input?.touch(index)?.y || 0,
+        engine__input__engineInputTouchDeltaX: (index) => this.input?.touch(index)?.dx || 0,
+        engine__input__engineInputTouchDeltaY: (index) => this.input?.touch(index)?.dy || 0,
+        engine__input__engineInputTouchPressure: (index) => this.input?.touch(index)?.pressure || 0,
+        engine__input__engineInputTouchRadiusX: (index) => this.input?.touch(index)?.radiusX || 0,
+        engine__input__engineInputTouchRadiusY: (index) => this.input?.touch(index)?.radiusY || 0,
+        engine__input__engineInputTouchPhase: (index) => this.input?.touch(index)?.phase || 0,
+        engine__input__engineInputControllerCount: () => this.input?.controllers.filter(Boolean).length || 0,
+        engine__input__engineInputControllerConnected: (index) => this.input?.controller(index) ? 1 : 0,
+        engine__input__engineInputControllerButtonDown: (index, button) => this.input?.controller(index)?.buttons[button]?.down ? 1 : 0,
+        engine__input__engineInputControllerButtonPressed: (index, button) => this.input?.controller(index)?.buttons[button]?.pressed ? 1 : 0,
+        engine__input__engineInputControllerButtonReleased: (index, button) => this.input?.controller(index)?.buttons[button]?.released ? 1 : 0,
+        engine__input__engineInputControllerButtonValue: (index, button) => this.input?.controller(index)?.buttons[button]?.value || 0,
+        engine__input__engineInputControllerAxis: (index, axis) => this.input?.controller(index)?.axes[axis] || 0,
+        engine__input__engineInputControllerRumble: (...args) => this.input?.rumble(...args) ? 1 : 0,
       },
     }
   }
@@ -101,6 +182,7 @@ class EngineWasmSession {
     this.canvas.dataset.engineMode = mode
     this.canvas.setAttribute('aria-label', mode === '3d' ? 'Azora Engine 3D viewport' : 'Azora Engine 2D viewport')
     this.container.appendChild(this.canvas)
+    this.input = new BrowserInput(this.canvas, this.logicalWidth, this.logicalHeight)
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: false })
     this.renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2))
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -150,12 +232,16 @@ class EngineWasmSession {
         this.pendingFrame = 0
         this.pendingFrameReject = null
         if (!this.startedAt) this.startedAt = now
+        this.input?.beginFrame()
         resolve((now - this.startedAt) / 1000)
       })
     })
   }
 
   present() {
+    for (let index = this.frame3dCount; index < this.drawables3d.length; index += 1) {
+      this.drawables3d[index].mesh.visible = false
+    }
     if (this.renderer && this.scene && this.camera) this.renderer.render(this.scene, this.camera)
   }
 
@@ -168,6 +254,8 @@ class EngineWasmSession {
         mesh.geometry.dispose()
       }
       this.drawables2d = []
+    } else if (this.mode === '3d') {
+      this.frame3dCount = 0
     }
   }
 
@@ -208,30 +296,68 @@ class EngineWasmSession {
     this.add2dMesh(positions, colors, uvs)
   }
 
-  drawCube(size, rotateX, rotateY, rotateZ, r, g, b) {
+  acquire3d(kind) {
     if (!this.scene || !this.shader3d) return
-    const normalizedSize = Math.max(0.05, Number(size) || 1)
-    if (!this.cube || this.cubeSize !== normalizedSize) {
-      if (this.cube) {
-        this.scene.remove(this.cube)
-        this.cube.geometry.dispose()
-        this.cube.material.dispose()
+    const index = this.frame3dCount++
+    let entry = this.drawables3d[index]
+    if (!entry || entry.kind !== kind) {
+      if (entry) {
+        this.scene.remove(entry.mesh)
+        entry.mesh.geometry.dispose()
+        entry.mesh.material.dispose()
       }
       const material = new THREE.RawShaderMaterial({
         vertexShader: this.shader3d.vertex,
         fragmentShader: this.shader3d.fragment,
         glslVersion: THREE.GLSL3,
         uniforms: {
-          uColor: { value: new THREE.Vector4(colorChannel(r), colorChannel(g), colorChannel(b), 1) },
+          uColor: { value: new THREE.Vector4(1, 1, 1, 1) },
           uLight: { value: new THREE.Vector4(0.5, 0.8, 0.3, 0.35) },
         },
       })
-      this.cube = new THREE.Mesh(new THREE.BoxGeometry(normalizedSize, normalizedSize, normalizedSize), material)
-      this.cubeSize = normalizedSize
-      this.scene.add(this.cube)
+      let geometry
+      if (kind === 'cylinder' || kind === 'wheel') {
+        geometry = new THREE.CylinderGeometry(1, 1, 1, kind === 'wheel' ? 20 : 14, 1, false)
+        if (kind === 'wheel') geometry.rotateZ(Math.PI / 2)
+      } else {
+        geometry = new THREE.BoxGeometry(1, 1, 1)
+      }
+      const mesh = new THREE.Mesh(geometry, material)
+      entry = { kind, mesh }
+      this.drawables3d[index] = entry
+      this.scene.add(mesh)
     }
-    this.cube.material.uniforms.uColor.value.set(colorChannel(r), colorChannel(g), colorChannel(b), 1)
-    this.cube.rotation.set(rotateX, rotateY, rotateZ)
+    entry.mesh.visible = true
+    return entry.mesh
+  }
+
+  transform3d(mesh, x, y, z, width, height, depth, rotateX, rotateY, rotateZ, r, g, b) {
+    if (!mesh) return
+    mesh.position.set(Number(x) || 0, Number(y) || 0, Number(z) || 0)
+    mesh.scale.set(Math.max(0.001, Number(width) || 1), Math.max(0.001, Number(height) || 1), Math.max(0.001, Number(depth) || 1))
+    mesh.rotation.set(Number(rotateX) || 0, Number(rotateY) || 0, Number(rotateZ) || 0)
+    mesh.material.uniforms.uColor.value.set(colorChannel(r), colorChannel(g), colorChannel(b), 1)
+  }
+
+  drawBoxAt(x, y, z, width, height, depth, rotateX, rotateY, rotateZ, r, g, b) {
+    this.transform3d(this.acquire3d('box'), x, y, z, width, height, depth, rotateX, rotateY, rotateZ, r, g, b)
+  }
+
+  drawCylinderAt(x, y, z, radius, length, rotateX, rotateY, rotateZ, r, g, b) {
+    const diameter = Math.max(0.001, (Number(radius) || 0.5) * 2)
+    this.transform3d(this.acquire3d('cylinder'), x, y, z, diameter, length, diameter, rotateX, rotateY, rotateZ, r, g, b)
+  }
+
+  drawWheelAt(x, y, z, radius, width, spin, yaw, steer, r, g, b) {
+    const mesh = this.acquire3d('wheel')
+    if (!mesh) return
+    const diameter = Math.max(0.001, (Number(radius) || 0.5) * 2)
+    mesh.position.set(Number(x) || 0, Number(y) || 0, Number(z) || 0)
+    mesh.scale.set(Math.max(0.001, Number(width) || 0.34), diameter, diameter)
+    this.wheelYawQuaternion.setFromAxisAngle(Y_AXIS, (Number(yaw) || 0) + (Number(steer) || 0))
+    this.wheelSpinQuaternion.setFromAxisAngle(X_AXIS, Number(spin) || 0)
+    mesh.quaternion.copy(this.wheelYawQuaternion).multiply(this.wheelSpinQuaternion)
+    mesh.material.uniforms.uColor.value.set(colorChannel(r), colorChannel(g), colorChannel(b), 1)
   }
 
   configureCamera(distance, fov) {
@@ -239,6 +365,99 @@ class EngineWasmSession {
     this.camera.position.z = Math.max(1.2, Number(distance) || 5.2)
     this.camera.fov = Math.max(20, Math.min(100, Number(fov) || 48))
     this.camera.updateProjectionMatrix()
+  }
+
+  configureCameraAt(x, y, z, targetX, targetY, targetZ, fov) {
+    if (!(this.camera instanceof THREE.PerspectiveCamera)) return
+    this.camera.position.set(Number(x) || 0, Number(y) || 0, Number(z) || 0)
+    this.camera.lookAt(Number(targetX) || 0, Number(targetY) || 0, Number(targetZ) || 0)
+    this.camera.fov = Math.max(20, Math.min(100, Number(fov) || 48))
+    this.camera.updateProjectionMatrix()
+  }
+
+  ensureAudio() {
+    if (this.audio) return this.audio
+    const AudioContextType = globalThis.AudioContext || globalThis.webkitAudioContext
+    if (!AudioContextType) return null
+    const context = new AudioContextType({ sampleRate: AUDIO_SAMPLE_RATE })
+    const master = context.createGain()
+    master.gain.value = 1
+    master.connect(context.destination)
+
+    const soundtrackBuffer = createProceduralBuffer(context, AUDIO_SAMPLE_RATE * 8, (frame) => {
+      const time = frame / AUDIO_SAMPLE_RATE
+      const section = Math.floor(time / 2) % 4
+      const root = [55, 65.41, 73.42, 49][section]
+      const chord = Math.sin(time * TAU * root) * 0.34
+        + Math.sin(time * TAU * root * 1.5) * 0.18
+        + Math.sin(time * TAU * root * 2) * 0.11
+      const beatFrame = frame % Math.floor(AUDIO_SAMPLE_RATE / 2)
+      const envelope = beatFrame < 1500 ? 1 - beatFrame / 1500 : 0
+      const beat = Math.sin(time * TAU * 44) * envelope * 0.30
+      return (chord + beat) * 0.62
+    })
+    const soundtrackGain = context.createGain()
+    soundtrackGain.gain.value = 0.20
+    soundtrackGain.connect(master)
+    const soundtrack = context.createBufferSource()
+    soundtrack.buffer = soundtrackBuffer
+    soundtrack.loop = true
+    soundtrack.connect(soundtrackGain)
+    soundtrack.start()
+
+    const engineBuffer = createProceduralBuffer(context, AUDIO_SAMPLE_RATE, (frame) => {
+      const time = frame / AUDIO_SAMPLE_RATE
+      return Math.sin(time * TAU * 78) * 0.48
+        + Math.sin(time * TAU * 156) * 0.24
+        + Math.sin(time * TAU * 312) * 0.10
+    })
+    const engineGain = context.createGain()
+    engineGain.gain.value = 0
+    engineGain.connect(master)
+    const engine = context.createBufferSource()
+    engine.buffer = engineBuffer
+    engine.loop = true
+    engine.playbackRate.value = 0.72
+    engine.connect(engineGain)
+    engine.start()
+
+    const crashFrameCount = Math.floor(AUDIO_SAMPLE_RATE * 0.45)
+    const crashBuffer = createProceduralBuffer(context, crashFrameCount, (frame) => {
+      const time = frame / crashFrameCount
+      const noise = ((frame * 97) % 200 - 100) / 100
+      const metal = Math.sin(frame * 0.37) * 0.35
+      const envelope = (1 - time) * (1 - time)
+      return (noise * 0.72 + metal) * envelope
+    })
+
+    const resume = () => context.resume().catch(() => {})
+    this.canvas?.addEventListener('pointerdown', resume, { once: true })
+    resume()
+    this.audio = { context, master, soundtrack, soundtrackGain, engine, engineGain, crashBuffer }
+    return this.audio
+  }
+
+  updateVehicleAudio(speed, throttle) {
+    const audio = this.ensureAudio()
+    if (!audio) return
+    const now = audio.context.currentTime
+    const speedRatio = clampNumber(Math.abs(Number(speed) || 0) / 30, 0, 1)
+    const load = clampNumber(throttle, 0, 1)
+    const volume = clampNumber(0.035 + speedRatio * 0.34 + load * 0.22, 0, 0.58)
+    const rate = 0.72 + speedRatio * 1.20 + load * 0.16
+    audio.engine.playbackRate.setTargetAtTime(rate, now, 0.035)
+    audio.engineGain.gain.setTargetAtTime(volume, now, 0.04)
+  }
+
+  playCrashAudio(intensity) {
+    const audio = this.ensureAudio()
+    if (!audio) return
+    const gain = audio.context.createGain()
+    gain.gain.value = clampNumber(intensity, 0.18, 1)
+    const source = audio.context.createBufferSource()
+    source.buffer = audio.crashBuffer
+    source.connect(gain).connect(audio.master)
+    source.start()
   }
 
   resizeRenderer() {
@@ -269,11 +488,16 @@ class EngineWasmSession {
     this.drawables2d = []
     this.material2d?.dispose()
     this.material2d = null
-    if (this.cube) {
-      this.cube.geometry.dispose()
-      this.cube.material.dispose()
+    this.input?.dispose()
+    this.input = null
+    for (const { mesh } of this.drawables3d) {
+      mesh.geometry.dispose()
+      mesh.material.dispose()
     }
-    this.cube = null
+    this.drawables3d = []
+    this.frame3dCount = 0
+    this.audio?.context.close().catch(() => {})
+    this.audio = null
     this.renderer?.dispose()
     this.renderer = null
     this.scene = null
