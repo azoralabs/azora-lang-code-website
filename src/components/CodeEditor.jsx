@@ -2,11 +2,12 @@ import { useEffect, useRef } from 'react'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
-import { bracketMatching, indentOnInput } from '@codemirror/language'
+import { bracketMatching, indentOnInput, indentUnit } from '@codemirror/language'
+import { forceLinting } from '@codemirror/lint'
 import { searchKeymap } from '@codemirror/search'
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { azoraTheme } from '../codemirror/azora-theme.js'
-import { azlsExtensions } from '../codemirror/azls.js'
+import { azlsExtensions, refreshAzoraDiagnostics } from '../codemirror/azls.js'
 
 export default function CodeEditor({
   document,
@@ -14,6 +15,7 @@ export default function CodeEditor({
   onRun,
   onRunTests,
   languageServer,
+  diagnostics = [],
   onDefinition,
   navigation,
 }) {
@@ -23,11 +25,13 @@ export default function CodeEditor({
   const onRunRef = useRef(onRun)
   const onRunTestsRef = useRef(onRunTests)
   const onDefinitionRef = useRef(onDefinition)
+  const diagnosticsRef = useRef(diagnostics)
 
   onChangeRef.current = onChange
   onRunRef.current = onRun
   onRunTestsRef.current = onRunTests
   onDefinitionRef.current = onDefinition
+  diagnosticsRef.current = diagnostics
 
   useEffect(() => {
     if (!containerRef.current) return undefined
@@ -53,6 +57,7 @@ export default function CodeEditor({
         indentOnInput(),
         azoraTheme,
         EditorState.tabSize.of(4),
+        indentUnit.of('    '),
         EditorState.readOnly.of(Boolean(document.readOnly)),
         keymap.of([
           ...closeBracketsKeymap,
@@ -69,7 +74,11 @@ export default function CodeEditor({
             onChangeRef.current?.(update.state.doc.toString())
           }
         }),
-        ...azlsExtensions(languageServer, (target) => onDefinitionRef.current?.(target)),
+        ...azlsExtensions(
+          languageServer,
+          (target) => onDefinitionRef.current?.(target),
+          () => diagnosticsRef.current,
+        ),
       ],
     })
 
@@ -90,6 +99,13 @@ export default function CodeEditor({
       view.dispatch({ changes: { from: 0, to: currentSource.length, insert: document.source } })
     }
   }, [document.source, document.readOnly])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    view.dispatch({ effects: refreshAzoraDiagnostics.of(null) })
+    forceLinting(view)
+  }, [diagnostics, document.uri])
 
   useEffect(() => {
     const view = viewRef.current

@@ -12,8 +12,14 @@ export const azoraTheme = EditorView.theme({
     color: '#D16B8E',
     fontWeight: '700',
   },
-  '.cm-azls-definition, .cm-azls-function': {
-    color: '#D4A574',
+  '.cm-azls-function': {
+    color: '#E6C96B',
+  },
+  '.cm-azls-parameter': {
+    color: '#B8B8B8',
+  },
+  '.cm-azls-definition, .cm-azls-variable, .cm-azls-identifier': {
+    color: '#D9DADA',
   },
   '.cm-azls-type': {
     color: '#5FA89F',
@@ -27,6 +33,10 @@ export const azoraTheme = EditorView.theme({
   },
   '.cm-azls-annotation': {
     color: '#E6C96B',
+  },
+  '.cm-azls-macro': {
+    color: '#B06FA8',
+    fontWeight: '700',
   },
   '.cm-azls-number': {
     color: '#D9DADA',
@@ -101,6 +111,45 @@ export const azoraTheme = EditorView.theme({
   '.cm-diagnosticText': {
     fontFamily: 'var(--font-sans)',
   },
+  '.cm-lintRange-error': {
+    backgroundImage: 'none',
+    textDecoration: 'underline wavy #FF667A',
+    textDecorationThickness: '1.5px',
+    textUnderlineOffset: '3px',
+    textDecorationSkipInk: 'none',
+  },
+  '.cm-lintRange-warning': {
+    backgroundImage: 'none',
+    textDecoration: 'underline wavy #E6C96B',
+    textUnderlineOffset: '3px',
+    textDecorationSkipInk: 'none',
+  },
+  '.cm-lint-marker-error': {
+    content: '""',
+    backgroundColor: '#FF667A',
+    borderRadius: '50%',
+    width: '6px',
+    height: '6px',
+  },
+  '.cm-lint-marker-warning': {
+    content: '""',
+    backgroundColor: '#E6C96B',
+    borderRadius: '50%',
+    width: '6px',
+    height: '6px',
+  },
+  '.cm-tooltip-lint': {
+    borderRadius: '6px',
+    boxShadow: '0 12px 32px #00000066',
+    overflow: 'hidden',
+  },
+  '.cm-diagnostic': {
+    padding: '8px 10px',
+    borderBottom: '1px solid #383838',
+  },
+  '.cm-diagnostic-error': {
+    borderLeft: '3px solid #FF667A',
+  },
 }, { dark: true })
 
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
@@ -117,17 +166,18 @@ const azoraHighlightStyle = HighlightStyle.define([
   { tag: tags.processingInstruction, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.operator, color: '#D9DADA' },
   { tag: tags.variableName, color: '#D9DADA' },
-  { tag: tags.definition(tags.variableName), color: '#D4A574' },
-  { tag: tags.function(tags.variableName), color: '#D4A574' },
-  { tag: tags.special(tags.variableName), color: '#D4A574' },
+  { tag: tags.definition(tags.variableName), color: '#B8B8B8' },
+  { tag: tags.function(tags.variableName), color: '#E6C96B' },
+  { tag: tags.special(tags.variableName), color: '#D9DADA' },
   { tag: tags.propertyName, color: '#D9DADA' },
-  { tag: tags.definition(tags.propertyName), color: '#D4A574' },
+  { tag: tags.definition(tags.propertyName), color: '#D9DADA' },
   { tag: tags.typeName, color: '#5FA89F' },
   { tag: tags.definition(tags.typeName), color: '#5FA89F' },
   { tag: tags.className, color: '#5FA89F' },
   { tag: tags.namespace, color: '#5FA89F' },
   { tag: tags.labelName, color: '#5FA89F' },
-  { tag: tags.standard(tags.name), color: '#D4A574' },
+  { tag: tags.special(tags.name), color: '#B06FA8', fontWeight: 'bold' },
+  { tag: tags.standard(tags.name), color: '#E6C96B' },
   { tag: tags.atom, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.bool, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.null, color: '#D16B8E', fontWeight: 'bold' },

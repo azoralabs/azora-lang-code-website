@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { StreamLanguage } from '@codemirror/language'
@@ -74,15 +74,22 @@ function ReadOnlyCodeMirror({ code, extensions = [] }) {
 }
 
 const languageExtensions = {
-  azora: [azoraLanguage],
   javascript: [javascript()],
   wasm: [],
   llvm: [StreamLanguage.define(llvmMode)],
   clike: [StreamLanguage.define(kotlin)],
 }
 
+function extensionsFor(language, code) {
+  // Azora IR is emitted only after compiler symbol resolution, so every
+  // reference in this read-only view is semantically known.
+  if (language === 'azora') return [azoraLanguage(code, { resolvedReferences: true })]
+  return languageExtensions[language] || []
+}
+
 export default function CodeView({ code, language = 'javascript' }) {
   const [copied, setCopied] = useState(false)
+  const extensions = useMemo(() => extensionsFor(language, code || ''), [language, code])
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code || '').then(() => {
@@ -98,8 +105,6 @@ export default function CodeView({ code, language = 'javascript' }) {
       </div>
     )
   }
-
-  const extensions = languageExtensions[language] || []
 
   return (
     <div className="h-full overflow-auto relative group">

@@ -1,9 +1,10 @@
 import { autocompletion } from '@codemirror/autocomplete'
 import { StateEffect, StateField } from '@codemirror/state'
-import { setDiagnostics } from '@codemirror/lint'
+import { forEachDiagnostic, lintGutter, linter } from '@codemirror/lint'
 import { Decoration, EditorView, ViewPlugin, hoverTooltip } from '@codemirror/view'
 
 const setHighlights = StateEffect.define()
+export const refreshAzoraDiagnostics = StateEffect.define()
 
 const semanticHighlights = StateField.define({
   create: () => Decoration.none,
@@ -31,12 +32,31 @@ function editorDiagnostics(state, diagnostics) {
   return diagnostics.map((diagnostic) => {
     const lineNumber = Math.max(1, Math.min(state.doc.lines, diagnostic.line || 1))
     const line = state.doc.line(lineNumber)
+    let from = Number.isInteger(diagnostic.from)
+      ? Math.max(line.from, Math.min(line.to, diagnostic.from))
+      : line.from
+    let to = Number.isInteger(diagnostic.to)
+      ? Math.max(from, Math.min(line.to, diagnostic.to))
+      : line.to
+
+    if (diagnostic.token) {
+      const tokenIndex = line.text.indexOf(diagnostic.token)
+      if (tokenIndex >= 0) {
+        from = line.from + tokenIndex
+        to = from + diagnostic.token.length
+      }
+    } else if (diagnostic.column) {
+      from = Math.min(line.to, line.from + Math.max(0, diagnostic.column - 1))
+      to = Math.min(line.to, from + 1)
+    }
+
+    if (from === to && line.to > line.from) to = Math.min(line.to, from + 1)
     return {
-      from: line.from,
-      to: Math.max(line.from, line.to),
+      from,
+      to,
       severity: diagnostic.severity || 'error',
       message: diagnostic.message,
-      source: 'AZLS',
+      source: diagnostic.source || 'AZLS',
     }
   })
 }
@@ -60,25 +80,12 @@ function analysisPlugin(server) {
       this.timer = setTimeout(async () => {
         const source = view.state.doc.toString()
         try {
-          const [highlights, diagnostics] = await Promise.all([
-            server.highlight(source),
-            server.diagnostics(source),
-          ])
+          const highlights = await server.highlight(source)
           if (generation !== this.generation || view.state.doc.toString() !== source) return
           view.dispatch({
             effects: setHighlights.of(highlightDecorations(highlights, view.state.doc.length)),
           })
-          view.dispatch(setDiagnostics(view.state, editorDiagnostics(view.state, diagnostics)))
-        } catch (error) {
-          if (generation !== this.generation) return
-          view.dispatch(setDiagnostics(view.state, [{
-            from: 0,
-            to: 0,
-            severity: 'warning',
-            source: 'AZLS',
-            message: error.message || String(error),
-          }]))
-        }
+        } catch {}
       }, delay)
     }
 
@@ -86,6 +93,38 @@ function analysisPlugin(server) {
       this.generation += 1
       clearTimeout(this.timer)
     }
+  })
+}
+
+function diagnostics(server, externalDiagnostics) {
+  return linter(async (view) => {
+    const source = view.state.doc.toString()
+    if (!server) {
+      return editorDiagnostics(view.state, externalDiagnostics?.() || [])
+    }
+
+    try {
+      const azls = await server.diagnostics(source)
+      if (view.state.doc.toString() !== source) return []
+      return editorDiagnostics(view.state, [
+        ...azls,
+        ...(externalDiagnostics?.() || []),
+      ])
+    } catch (error) {
+      return editorDiagnostics(view.state, [
+        ...(externalDiagnostics?.() || []),
+        {
+          line: 1,
+          severity: 'warning',
+          source: 'AZLS',
+          message: error.message || String(error),
+        },
+      ])
+    }
+  }, {
+    delay: 90,
+    needsRefresh: (update) => update.transactions.some((transaction) =>
+      transaction.effects.some((effect) => effect.is(refreshAzoraDiagnostics))),
   })
 }
 
@@ -119,10 +158,23 @@ function completions(server) {
   })
 }
 
+function hasErrorAt(state, position) {
+  let found = false
+  forEachDiagnostic(state, (diagnostic, from, to) => {
+    if (diagnostic.severity !== 'error') return
+    const overlaps = from === to
+      ? position === from
+      : position >= from && position <= to
+    if (overlaps) found = true
+  })
+  return found
+}
+
 function hovers(server) {
   return hoverTooltip(async (view, position) => {
+    if (hasErrorAt(view.state, position)) return null
     const target = await server.hover(view.state.doc.toString(), position)
-    if (!target) return null
+    if (!target || hasErrorAt(view.state, position)) return null
     const detail = target.document.source.slice(target.detailStart, target.detailEnd).trim()
     return {
       pos: position,
@@ -162,13 +214,19 @@ function definitionClicks(server, onDefinition) {
   })
 }
 
-export function azlsExtensions(server, onDefinition) {
-  if (!server) return []
-  return [
-    semanticHighlights,
-    analysisPlugin(server),
-    completions(server),
-    hovers(server),
-    definitionClicks(server, onDefinition),
+export function azlsExtensions(server, onDefinition, externalDiagnostics) {
+  const extensions = [
+    diagnostics(server, externalDiagnostics),
+    lintGutter(),
   ]
+  if (server) {
+    extensions.push(
+      semanticHighlights,
+      analysisPlugin(server),
+      completions(server),
+      hovers(server),
+      definitionClicks(server, onDefinition),
+    )
+  }
+  return extensions
 }

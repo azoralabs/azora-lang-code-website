@@ -51,6 +51,10 @@ export default function azora(Prism) {
       pattern: /@\w+(?::[\w.]+)?(?:\([^)]*\))?/,
       alias: 'annotation',
     },
+    macro: {
+      pattern: /\b[a-z_]\w*@/,
+      alias: 'variable',
+    },
     preprocessor: {
       pattern: /\$\w+/,
       alias: 'variable',

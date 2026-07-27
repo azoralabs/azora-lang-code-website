@@ -10,6 +10,7 @@ import { getDefaultVersion, isValidVersion } from './engine/versions.js'
 import { runJavaScript } from './engine/javascriptRunner.js'
 import { runLlvmIr } from './engine/llvmRunner.js'
 import { errorMessage } from './engine/errorMessage.js'
+import { parseCompilerDiagnostics } from './engine/compilerDiagnostics.js'
 import { DEFAULT_ENGINE_EXAMPLE } from './data/engineExamples.js'
 
 const LS_CODE_KEY = 'azora-playground-code'
@@ -45,6 +46,7 @@ export default function App() {
   const [results, setResults] = useState(EMPTY_RESULTS)
   const [activeStdDocument, setActiveStdDocument] = useState(null)
   const [navigation, setNavigation] = useState(null)
+  const [compilerDiagnostics, setCompilerDiagnostics] = useState([])
   const engineViewportRef = useRef(null)
   const engineSessionRef = useRef(null)
 
@@ -96,11 +98,16 @@ export default function App() {
     if (!engine.ready || (needsEngineLibrary && !activeLibrary)) return
     try {
       const ppResult = engine.preprocess(code, activeLibrary)
+      setCompilerDiagnostics(
+        ppResult.success ? [] : parseCompilerDiagnostics(ppResult.errors, code),
+      )
       setResults(prev => ({
         ...prev,
         preprocessed: ppResult.success ? ppResult.output.trimEnd() : `// Error:\n// ${ppResult.errors}`,
       }))
-    } catch {}
+    } catch (error) {
+      setCompilerDiagnostics(parseCompilerDiagnostics(errorMessage(error), code))
+    }
   }, [code, engine.ready, engine, activeLibrary, needsEngineLibrary])
 
   useEffect(() => {
@@ -172,6 +179,9 @@ export default function App() {
         setResults(prev => ({ ...prev, console: [] }))
 
         const wasmResult = engine.generateWasm(code, engineWasm.assets.libraries)
+        setCompilerDiagnostics(
+          wasmResult.success ? [] : parseCompilerDiagnostics(wasmResult.errors, code),
+        )
         setResults(prev => ({
           ...prev,
           wasm: wasmResult.success ? wasmResult.output : `;; Error:\n;; ${wasmResult.errors}`,
@@ -201,6 +211,9 @@ export default function App() {
         engineSessionRef.current = execution.session
       } else if (target === 'javascript') {
         const jsResult = engine.generateJavaScript(code, activeLibrary)
+        setCompilerDiagnostics(
+          jsResult.success ? [] : parseCompilerDiagnostics(jsResult.errors, code),
+        )
         const javascriptCode = jsResult.success ? jsResult.output : null
 
         setResults(prev => ({
@@ -220,6 +233,9 @@ export default function App() {
         setResults(prev => ({ ...prev, console: parseOutput(runResult) }))
       } else if (target === 'llvm-ir') {
         const irResult = engine.generateLlvmIr(code, activeLibrary)
+        setCompilerDiagnostics(
+          irResult.success ? [] : parseCompilerDiagnostics(irResult.errors, code),
+        )
         const llvmIrCode = irResult.success ? irResult.output : null
 
         setResults(prev => ({
@@ -244,6 +260,9 @@ export default function App() {
         setResults(prev => ({ ...prev, console: parseOutput(runResult) }))
       } else if (target === 'wasm') {
         const waResult = engine.generateWasm(code, activeLibrary)
+        setCompilerDiagnostics(
+          waResult.success ? [] : parseCompilerDiagnostics(waResult.errors, code),
+        )
         setResults(prev => ({
           ...prev,
           wasm: waResult.success ? waResult.output : `;; Error:\n;; ${waResult.errors}`,
@@ -260,9 +279,15 @@ export default function App() {
           console: [{ text: 'Showing generated WebAssembly; running program via the Azora interpreter...', type: 'output' }],
         }))
         const interpretResult = await engine.interpret(code, activeLibrary)
+        setCompilerDiagnostics(
+          interpretResult.success ? [] : parseCompilerDiagnostics(interpretResult.errors, code),
+        )
         setResults(prev => ({ ...prev, console: parseOutput(interpretResult) }))
       } else {
         const interpretResult = await engine.interpret(code, activeLibrary)
+        setCompilerDiagnostics(
+          interpretResult.success ? [] : parseCompilerDiagnostics(interpretResult.errors, code),
+        )
         setResults(prev => ({ ...prev, console: parseOutput(interpretResult) }))
       }
     } catch (e) {
@@ -282,6 +307,9 @@ export default function App() {
 
     try {
       const result = await engine.runTests(code, activeLibrary)
+      setCompilerDiagnostics(
+        result.success ? [] : parseCompilerDiagnostics(result.errors, code),
+      )
       setResults(prev => ({ ...prev, console: parseOutput(result) }))
     } catch (e) {
       setResults(prev => ({
@@ -317,6 +345,7 @@ export default function App() {
 
   const loadExample = useCallback((source) => {
     setCode(source)
+    setCompilerDiagnostics([])
     setActiveStdDocument(null)
   }, [])
 
@@ -396,6 +425,7 @@ export default function App() {
                 onRun={handleRun}
                 onRunTests={handleRunTests}
                 languageServer={azls.server}
+                diagnostics={editorDocument.readOnly ? [] : compilerDiagnostics}
                 onDefinition={handleDefinition}
                 navigation={navigation}
               />

@@ -99,7 +99,7 @@ export async function loadAzoraLanguageServer(version) {
     documents,
 
     highlight(source) {
-      return invokeJson('azlsHighlight', [source])
+      return invokeJson('azlsHighlight', [source, corpus])
     },
 
     diagnostics(source) {
