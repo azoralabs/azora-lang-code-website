@@ -1,13 +1,24 @@
-name: Deploy to Hostinger
+name: Deploy to Azora VPS
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://code.azoralang.org
 
     steps:
       - name: Checkout
@@ -25,13 +36,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Hostinger via SSH
+      - name: Deploy to Azora VPS
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avz --exclude='.htaccess'
+          switches: -rlptDz --delete --exclude='.htaccess'
           path: dist/
-          remote_path: /home/u630685576/domains/azoralang.org/public_html/code/
-          remote_host: ${{ secrets.HOSTINGER_HOST }}
-          remote_port: ${{ secrets.HOSTINGER_PORT }}
-          remote_user: ${{ secrets.HOSTINGER_USER }}
-          remote_key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          remote_path: /var/www/code.azoralang.org/html/
+          remote_host: 152.239.116.142
+          remote_port: ${{ secrets.VPS_PORT || secrets.HOSTINGER_PORT || '22' }}
+          remote_user: ${{ secrets.VPS_USER || secrets.HOSTINGER_USER }}
+          remote_key: ${{ secrets.VPS_SSH_KEY || secrets.HOSTINGER_SSH_KEY }}
