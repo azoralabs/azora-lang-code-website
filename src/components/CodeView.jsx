@@ -15,7 +15,7 @@ const readOnlyTheme = EditorView.theme({
     WebkitUserSelect: 'none',
   },
   '.cm-content': {
-    fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+    fontFamily: 'var(--font-code)',
     fontSize: '14px',
     lineHeight: '1.6',
   },

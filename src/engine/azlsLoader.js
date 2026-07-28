@@ -1,5 +1,8 @@
 const FIELD_MARKER = '<:AZLS-FIELD:>'
 const RECORD_MARKER = '<:AZLS-RECORD:>'
+const WASM_PAGE_BYTES = 64 * 1024
+const MIN_REQUEST_MEMORY_BYTES = 4 * 1024 * 1024
+const HIGHLIGHT_CHUNK_SIZE = 512
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
@@ -40,13 +43,120 @@ function documentSource(documents, activeSource, documentId) {
   return documents[documentId]?.source || ''
 }
 
-function resolveRange(documents, activeSource, response) {
+function resolveRange(documents, activeSource, documentIds, response) {
   if (!response?.found) return null
-  const document = response.document === -1
+  const documentId = response.document === -1
+    ? -1
+    : documentIds[response.document]
+  const document = documentId === -1
     ? { id: -1, uri: 'azora-playground:///main.az', path: 'main.az', source: activeSource }
-    : { id: response.document, ...documents[response.document] }
+    : { id: documentId, ...documents[documentId] }
   if (!document?.source) return null
   return { ...response, document }
+}
+
+function moduleMetadata(document, id) {
+  const declaration = document.source.match(
+    /^\s*(export\s+)?module\s+([A-Za-z_][A-Za-z0-9_.]*)/m,
+  )
+  return Object.freeze({
+    ...document,
+    id,
+    module: declaration?.[2] || '',
+    exported: Boolean(declaration?.[1]),
+  })
+}
+
+function importedModules(source) {
+  const modules = []
+  const statement = /^\s*(?:import|use)\s+([^\n\r/]+)/gm
+  let match
+  while ((match = statement.exec(source)) != null) {
+    const clause = match[1].trim()
+    if (clause.startsWith('zone ') || clause.startsWith('friend zone ')) continue
+
+    const grouped = clause.match(
+      /^([A-Za-z_][A-Za-z0-9_.]*)\.\{([^}]+)\}/,
+    )
+    if (grouped) {
+      for (const child of grouped[2].split(',')) {
+        const name = child.trim()
+        if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+          modules.push(`${grouped[1]}.${name}`)
+        }
+      }
+      continue
+    }
+
+    const plain = clause.match(
+      /^([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*(?:\.\*)?)/,
+    )
+    if (plain) modules.push(plain[1])
+  }
+  return modules
+}
+
+function moduleMatches(requested, candidate) {
+  if (requested.endsWith('.*')) {
+    return candidate.startsWith(requested.slice(0, -1))
+  }
+  return requested === candidate
+}
+
+export function createAzlsWorkspace(documents) {
+  const metadata = documents.map(moduleMetadata)
+  const exportedDocuments = metadata.filter((document) => document.exported)
+  const corpusCache = new Map()
+
+  function contextFor(source) {
+    const selected = new Map(
+      exportedDocuments.map((document) => [document.id, document]),
+    )
+    const pending = [...importedModules(source)]
+    const visitedModules = new Set()
+
+    for (let index = 0; index < pending.length; index += 1) {
+      const requested = pending[index]
+      if (visitedModules.has(requested)) continue
+      visitedModules.add(requested)
+
+      for (const document of metadata) {
+        if (!document.module || !moduleMatches(requested, document.module)) continue
+        if (!selected.has(document.id)) {
+          selected.set(document.id, document)
+          pending.push(...importedModules(document.source))
+        }
+      }
+    }
+
+    const visibleDocuments = [...selected.values()].sort((left, right) => left.id - right.id)
+    const documentIds = visibleDocuments.map((document) => document.id)
+    const cacheKey = documentIds.join(',')
+    let corpus = corpusCache.get(cacheKey)
+    if (corpus == null) {
+      corpus = visibleDocuments.map((document) =>
+        `${document.uri}${FIELD_MARKER}${document.source}${RECORD_MARKER}`,
+      ).join('')
+      corpusCache.set(cacheKey, corpus)
+    }
+    return Object.freeze({ corpus, documentIds: Object.freeze(documentIds) })
+  }
+
+  return Object.freeze({ contextFor })
+}
+
+function growRequestMemory(exports, args) {
+  const inputBytes = args.reduce((total, argument) => (
+    total + (typeof argument === 'string' ? textEncoder.encode(argument).length + 4 : 0)
+  ), 0)
+  const desiredBytes = Math.max(
+    MIN_REQUEST_MEMORY_BYTES,
+    inputBytes * 8 + WASM_PAGE_BYTES,
+  )
+  const missingBytes = desiredBytes - exports.memory.buffer.byteLength
+  if (missingBytes > 0) {
+    exports.memory.grow(Math.ceil(missingBytes / WASM_PAGE_BYTES))
+  }
 }
 
 export async function loadAzoraLanguageServer(version) {
@@ -68,9 +178,7 @@ export async function loadAzoraLanguageServer(version) {
     workspaceResponse.json(),
   ])
   const documents = Object.freeze(workspace.documents || [])
-  const corpus = documents.map((document) =>
-    `${document.uri}${FIELD_MARKER}${document.source}${RECORD_MARKER}`,
-  ).join('')
+  const workspaceIndex = createAzlsWorkspace(documents)
 
   async function invoke(exportName, args) {
     // Azora's current WASM allocator is intentionally monotonic. A fresh,
@@ -78,6 +186,7 @@ export async function loadAzoraLanguageServer(version) {
     // bounded arena while WebAssembly.compile remains cached for this version.
     const instance = await WebAssembly.instantiate(module, wasmImports())
     const exports = instance.exports
+    growRequestMemory(exports, args)
     const wasmArgs = args.map((argument) =>
       typeof argument === 'string' ? writeString(exports, argument) : argument,
     )
@@ -98,8 +207,15 @@ export async function loadAzoraLanguageServer(version) {
     version,
     documents,
 
-    highlight(source) {
-      return invokeJson('azlsHighlight', [source, corpus])
+    async highlight(source) {
+      const { corpus } = workspaceIndex.contextFor(source)
+      const highlights = []
+      for (let start = 0; start < source.length; start += HIGHLIGHT_CHUNK_SIZE) {
+        const end = Math.min(source.length, start + HIGHLIGHT_CHUNK_SIZE)
+        const chunk = await invokeJson('azlsHighlightRange', [source, corpus, start, end])
+        highlights.push(...chunk.filter((span) => span.start >= start && span.start < end))
+      }
+      return highlights
     },
 
     diagnostics(source) {
@@ -107,21 +223,28 @@ export async function loadAzoraLanguageServer(version) {
     },
 
     async definition(source, offset) {
-      const response = await invokeJson('azlsDefinition', [source, offset, corpus])
-      return resolveRange(documents, source, response)
+      const context = workspaceIndex.contextFor(source)
+      const response = await invokeJson('azlsDefinition', [source, offset, context.corpus])
+      return resolveRange(documents, source, context.documentIds, response)
     },
 
     async hover(source, offset) {
-      const response = await invokeJson('azlsHover', [source, offset, corpus])
-      return resolveRange(documents, source, response)
+      const context = workspaceIndex.contextFor(source)
+      const response = await invokeJson('azlsHover', [source, offset, context.corpus])
+      return resolveRange(documents, source, context.documentIds, response)
     },
 
     async complete(source, offset) {
-      const items = await invokeJson('azlsComplete', [source, offset, corpus])
+      const context = workspaceIndex.contextFor(source)
+      const items = await invokeJson('azlsComplete', [source, offset, context.corpus])
       return items.map((item) => {
-        const itemSource = documentSource(documents, source, item.document)
+        const documentId = item.document === -1
+          ? -1
+          : context.documentIds[item.document]
+        const itemSource = documentSource(documents, source, documentId)
         return {
           ...item,
+          document: documentId,
           label: itemSource.slice(item.start, item.end),
           detail: itemSource.slice(item.detailStart, item.detailEnd).trim(),
         }

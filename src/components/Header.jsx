@@ -2,24 +2,53 @@ import VersionSelector from './VersionSelector.jsx'
 import TargetSelector from './TargetSelector.jsx'
 import ExampleSelector from './ExampleSelector.jsx'
 
-export default function Header({ version, onVersionChange, target, onTargetChange, onRun, onRunTests, onClear, isRunning, engineReady, onLoadExample }) {
+export default function Header({
+  version,
+  onVersionChange,
+  target,
+  onTargetChange,
+  onRun,
+  onStop,
+  onRunTests,
+  onClear,
+  isRunning,
+  isGameRunning,
+  engineReady,
+  onLoadExample,
+  code,
+}) {
+  const canStopGame = target === 'engine-wasm' && (isRunning || isGameRunning)
+
   return (
     <header className="playground-topbar flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 bg-az-95 border-b border-az-80 shrink-0">
       <div className="flex items-center gap-2">
         <img src="/azora_logo.svg" alt="Azora" className="w-7 h-7" />
         <span className="text-az-20 font-semibold text-sm hidden sm:inline">Azora Playground</span>
-        <span className="text-[10px] text-az-60 border border-az-70 rounded px-1.5 py-0.5 hidden sm:inline">v0.0.4</span>
       </div>
 
       <VersionSelector version={version} onChange={onVersionChange} />
       <TargetSelector target={target} onChange={onTargetChange} />
-      <ExampleSelector onSelect={onLoadExample} target={target} />
+      <ExampleSelector onSelect={onLoadExample} target={target} source={code} />
 
       <div className="flex-1 min-w-0" />
 
       <div className="flex items-center gap-2">
-        {isRunning && (
+        {(isRunning || isGameRunning) && (
           <div className="w-2 h-2 rounded-full bg-az-primary animate-pulse" />
+        )}
+
+        {canStopGame && (
+          <button
+            type="button"
+            onClick={onStop}
+            className="px-3 py-1 text-sm rounded-md border border-pastel-red text-pastel-red
+                       hover:bg-pastel-red hover:text-az-95 transition-colors cursor-pointer
+                       inline-flex items-center gap-2"
+            title="Stop running game"
+          >
+            <span className="block w-2.5 h-2.5 rounded-[1px] bg-current" aria-hidden="true" />
+            Stop
+          </button>
         )}
 
         <button

@@ -8,7 +8,7 @@ pack App {
 }
 
 impl App {
-    func greet(): String { ref self ->
+    func greet(): String { self& ->
         return "Hello from ${'${'}self.name}!"
     }
 }

@@ -78,8 +78,7 @@ class EngineWasmSession {
 
     const emit = (value) => this.onMessage(String(value), 'output')
     const emitString = (pointer) => emit(this.decodeString(pointer))
-    return {
-      env: {
+    const env = {
         print_i32: emit,
         print_i64: emit,
         print_f64: emit,
@@ -92,13 +91,13 @@ class EngineWasmSession {
         write_f32: emit,
         write_bool: (value) => emit(value ? 'true' : 'false'),
         write_str: emitString,
-        az_sin: Math.sin,
-        az_cos: Math.cos,
-        az_tan: Math.tan,
-        az_sqrt: Math.sqrt,
-        az_floor: Math.floor,
-        az_ceil: Math.ceil,
-        az_pow: Math.pow,
+        __std_math_sin: Math.sin,
+        __std_math_cos: Math.cos,
+        __std_math_tan: Math.tan,
+        __std_math_sqrt: Math.sqrt,
+        __std_math_floor: Math.floor,
+        __std_math_ceil: Math.ceil,
+        __std_math_pow: Math.pow,
         engine__engineWebOpen2d: (width, height, vertex, fragment) => this.open2d(width, height, vertex, fragment),
         engine__engineWebOpen3d: (width, height, vertex, fragment) => this.open3d(width, height, vertex, fragment),
         engine__engineWebNextFrame: new WebAssembly.Suspending(() => this.nextFrame()),
@@ -162,8 +161,15 @@ class EngineWasmSession {
         engine__input__engineInputControllerButtonValue: (index, button) => this.input?.controller(index)?.buttons[button]?.value || 0,
         engine__input__engineInputControllerAxis: (index, axis) => this.input?.controller(index)?.axes[axis] || 0,
         engine__input__engineInputControllerRumble: (...args) => this.input?.rumble(...args) ? 1 : 0,
-      },
     }
+
+    for (const [name, implementation] of Object.entries(env)) {
+      if (name.startsWith('engine__')) {
+        env[`__${name.replaceAll('__', '_')}`] = implementation
+      }
+    }
+
+    return { env }
   }
 
   attach(instance) {

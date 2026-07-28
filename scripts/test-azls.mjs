@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { EditorState } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { azoraLanguage } from '../src/codemirror/azora-language.js'
+import { engineExamples } from '../src/data/engineExamples.js'
+import { createAzlsWorkspace } from '../src/engine/azlsLoader.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const packageMetadata = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -41,6 +43,13 @@ const corpus = workspace.documents.map((document) =>
 async function invoke(name, args = []) {
   const instance = await WebAssembly.instantiate(module, imports)
   const exports = instance.exports
+  const inputBytes = args.reduce((total, value) =>
+    total + (typeof value === 'string' ? encoder.encode(value).length + 4 : 0), 0)
+  const desiredBytes = Math.max(4 * 1024 * 1024, inputBytes * 8 + 64 * 1024)
+  const missingBytes = desiredBytes - exports.memory.buffer.byteLength
+  if (missingBytes > 0) {
+    exports.memory.grow(Math.ceil(missingBytes / (64 * 1024)))
+  }
   const wasmArgs = args.map((value) => {
     if (typeof value !== 'string') return value
     const bytes = encoder.encode(value)
@@ -57,6 +66,25 @@ async function invokeJson(name, args) {
   return JSON.parse(await invoke(name, args))
 }
 
+const workspaceIndex = createAzlsWorkspace(workspace.documents)
+
+async function highlightInChunks(source) {
+  const context = workspaceIndex.contextFor(source)
+  const highlights = []
+  const chunkSize = 512
+  for (let start = 0; start < source.length; start += chunkSize) {
+    const end = Math.min(source.length, start + chunkSize)
+    const spans = await invokeJson('azlsHighlightRange', [
+      source,
+      context.corpus,
+      start,
+      end,
+    ])
+    highlights.push(...spans.filter((span) => span.start >= start && span.start < end))
+  }
+  return { context, highlights }
+}
+
 assert.equal(await invoke('azlsVersion'), version)
 assert.ok(workspace.documents.length > 0)
 
@@ -64,6 +92,42 @@ const unicodeSource = 'module exemplu\nfunc salut(): String { return "Bună" }'
 const highlights = await invokeJson('azlsHighlight', [unicodeSource, corpus])
 assert.ok(highlights.some((span) => span.type === 'keyword'))
 assert.ok(highlights.some((span) => span.type === 'string'))
+
+const interpolationSource = [
+  'pack App { var name: String }',
+  'impl App {',
+  '    func greet(): String { self& ->',
+  '        return "Hello from ${self.name}!"',
+  '    }',
+  '}',
+].join('\n')
+const interpolationHighlights = await invokeJson('azlsHighlight', [interpolationSource, corpus])
+const interpolationText = (span) => interpolationSource.slice(span.start, span.end)
+assert.ok(
+  interpolationHighlights.some((span) =>
+    span.type === 'parameter' && interpolationText(span) === 'self'
+  ),
+  'the receiver inside an interpolation must retain parameter highlighting',
+)
+assert.ok(
+  interpolationHighlights.some((span) =>
+    span.type === 'variable' && interpolationText(span) === 'name'
+  ),
+  'a member inside an interpolation must retain variable highlighting',
+)
+assert.equal(
+  interpolationHighlights.some((span) =>
+    span.type === 'string' && interpolationText(span).includes('self.name')
+  ),
+  false,
+  'interpolation expressions must not be covered by a string span',
+)
+assert.deepEqual(
+  interpolationHighlights
+    .filter((span) => span.type === 'interpolation-punctuation')
+    .map(interpolationText),
+  ['$', '{', '}'],
+)
 
 function codeMirrorTokens(source, language) {
   const state = EditorState.create({ doc: source, extensions: [language] })
@@ -263,5 +327,66 @@ assert.ok(completions.some((item) => {
     : workspace.documents[item.document].source
   return source.slice(item.start, item.end) === 'tupleOf'
 }))
+
+for (const example of engineExamples) {
+  const { highlights: exampleHighlights } = await highlightInChunks(example.code)
+  assert.ok(
+    exampleHighlights.some((span) => span.type === 'keyword'),
+    `${example.title} must receive AZLS semantic highlighting`,
+  )
+  assert.ok(
+    exampleHighlights.some((span) => span.type === 'function'),
+    `${example.title} must resolve known engine functions`,
+  )
+}
+
+const racingExample = engineExamples.find((example) => example.title === 'Racing Game')
+const racingContext = workspaceIndex.contextFor(racingExample.code)
+const racingPaths = racingContext.documentIds.map((id) => workspace.documents[id].path)
+assert.ok(racingPaths.includes('engine/render/render.az'))
+assert.ok(racingPaths.includes('engine/shaders/shaders.az'))
+assert.ok(racingPaths.includes('engine/input/input.az'))
+assert.ok(racingPaths.includes('std/math.az'))
+
+const boxAtOffset = racingExample.code.indexOf('engine::boxAt') + 'engine::'.length + 2
+const boxAtDefinition = await invokeJson('azlsDefinition', [
+  racingExample.code,
+  boxAtOffset,
+  racingContext.corpus,
+])
+assert.equal(boxAtDefinition.found, true)
+assert.equal(
+  workspace.documents[racingContext.documentIds[boxAtDefinition.document]].path,
+  'engine/render/render.az',
+)
+
+const renderDocument = workspace.documents.find(
+  (document) => document.path === 'engine/render/render.az',
+)
+const renderContext = workspaceIndex.contextFor(renderDocument.source)
+const renderSinOffset = renderDocument.source.indexOf('std::math::sin') + 'std::math::'.length + 1
+const renderSinHover = await invokeJson('azlsHover', [
+  renderDocument.source,
+  renderSinOffset,
+  renderContext.corpus,
+])
+assert.equal(renderSinHover.found, true)
+assert.equal(
+  workspace.documents[renderContext.documentIds[renderSinHover.document]].path,
+  'std/math.az',
+)
+
+for (const path of ['engine/render/render.az', 'std/serializer.az']) {
+  const document = workspace.documents.find((candidate) => candidate.path === path)
+  const { highlights: documentHighlights } = await highlightInChunks(document.source)
+  assert.ok(
+    documentHighlights.length > 0,
+    `${path} must remain highlighted when opened as a read-only definition`,
+  )
+  assert.ok(
+    documentHighlights.some((span) => span.type === 'function'),
+    `${path} must retain function semantics when opened`,
+  )
+}
 
 console.log(`AZLS ${version}: ${workspace.documents.length} std documents and all ABI checks passed.`)

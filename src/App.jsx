@@ -13,7 +13,7 @@ import { errorMessage } from './engine/errorMessage.js'
 import { parseCompilerDiagnostics } from './engine/compilerDiagnostics.js'
 import { DEFAULT_ENGINE_EXAMPLE } from './data/engineExamples.js'
 
-const LS_CODE_KEY = 'azora-playground-code'
+const LEGACY_LS_CODE_KEY = 'azora-playground-code'
 const LS_VERSION_KEY = 'azora-playground-version'
 const LS_TARGET_KEY = 'azora-playground-target'
 const ACTIVE_TARGETS = new Set(['interpreted', 'javascript', 'wasm', 'engine-wasm', 'llvm-ir'])
@@ -35,20 +35,24 @@ function loadTarget() {
 }
 
 export default function App() {
-  const [code, setCode] = useState(() => loadSaved(LS_CODE_KEY, SAMPLE_CODE))
   const [version, setVersion] = useState(() => {
     const saved = loadSaved(LS_VERSION_KEY, getDefaultVersion())
     return isValidVersion(saved) ? saved : getDefaultVersion()
   })
   const [target, setTarget] = useState(loadTarget)
+  const [code, setCode] = useState(() => (
+    loadTarget() === 'engine-wasm' ? DEFAULT_ENGINE_EXAMPLE.code : SAMPLE_CODE
+  ))
   const [activeTab, setActiveTab] = useState('console')
   const [isRunning, setIsRunning] = useState(false)
+  const [isGameRunning, setIsGameRunning] = useState(false)
   const [results, setResults] = useState(EMPTY_RESULTS)
   const [activeStdDocument, setActiveStdDocument] = useState(null)
   const [navigation, setNavigation] = useState(null)
   const [compilerDiagnostics, setCompilerDiagnostics] = useState([])
   const engineViewportRef = useRef(null)
   const engineSessionRef = useRef(null)
+  const engineRunIdRef = useRef(0)
 
   const engine = useAzoraEngine(version)
   const engineWasm = useEngineWasm(version)
@@ -64,8 +68,8 @@ export default function App() {
   }, [activeStdDocument, azls.server, code])
 
   useEffect(() => {
-    try { localStorage.setItem(LS_CODE_KEY, code) } catch {}
-  }, [code])
+    try { localStorage.removeItem(LEGACY_LS_CODE_KEY) } catch {}
+  }, [])
 
   useEffect(() => {
     try { localStorage.setItem(LS_VERSION_KEY, version) } catch {}
@@ -85,14 +89,21 @@ export default function App() {
     if (safeTarget !== 'wasm' && safeTarget !== 'engine-wasm' && activeTab === 'wasm') setActiveTab('console')
   }, [target, activeTab])
 
+  const disposeEngineSession = useCallback(() => {
+    engineRunIdRef.current += 1
+    engineSessionRef.current?.dispose()
+    engineSessionRef.current = null
+    setIsRunning(false)
+    setIsGameRunning(false)
+  }, [])
+
   useEffect(() => () => engineSessionRef.current?.dispose(), [])
 
   useEffect(() => {
     if (target !== 'engine-wasm') {
-      engineSessionRef.current?.dispose()
-      engineSessionRef.current = null
+      disposeEngineSession()
     }
-  }, [target])
+  }, [disposeEngineSession, target])
 
   useEffect(() => {
     if (!engine.ready || (needsEngineLibrary && !activeLibrary)) return
@@ -161,6 +172,8 @@ export default function App() {
 
   const handleRun = useCallback(async () => {
     if (!engine.ready || isRunning) return
+    const engineRunId = target === 'engine-wasm' ? engineRunIdRef.current + 1 : null
+    if (engineRunId != null) engineRunIdRef.current = engineRunId
     setIsRunning(true)
     setActiveTab('console')
 
@@ -176,6 +189,7 @@ export default function App() {
 
         engineSessionRef.current?.dispose()
         engineSessionRef.current = null
+        setIsGameRunning(false)
         setResults(prev => ({ ...prev, console: [] }))
 
         const wasmResult = engine.generateWasm(code, engineWasm.assets.libraries)
@@ -204,11 +218,16 @@ export default function App() {
           container: engineViewportRef.current,
           onMessage,
         })
+        if (engineRunId !== engineRunIdRef.current) {
+          execution.session?.dispose()
+          return
+        }
         if (!execution.result.success) {
           onMessage(execution.result.errors || 'Engine execution failed.', 'error')
           return
         }
         engineSessionRef.current = execution.session
+        setIsGameRunning(true)
       } else if (target === 'javascript') {
         const jsResult = engine.generateJavaScript(code, activeLibrary)
         setCompilerDiagnostics(
@@ -296,9 +315,23 @@ export default function App() {
         console: [{ text: `Unexpected error: ${errorMessage(e)}`, type: 'error' }],
       }))
     } finally {
-      setIsRunning(false)
+      if (engineRunId == null || engineRunId === engineRunIdRef.current) {
+        setIsRunning(false)
+      }
     }
   }, [code, engine, engineWasm.assets, engineWasm.error, isRunning, parseOutput, target, activeLibrary])
+
+  const handleStop = useCallback(() => {
+    const hadActiveGame = isRunning || isGameRunning || engineSessionRef.current != null
+    disposeEngineSession()
+    setIsRunning(false)
+    if (hadActiveGame) {
+      setResults(prev => ({
+        ...prev,
+        console: [...prev.console, { text: 'Engine game stopped.', type: 'output' }].slice(-250),
+      }))
+    }
+  }, [disposeEngineSession, isGameRunning, isRunning])
 
   const handleRunTests = useCallback(async () => {
     if (!engine.ready || isRunning) return
@@ -344,18 +377,27 @@ export default function App() {
   }, [azls.server, editorDocument.uri])
 
   const loadExample = useCallback((source) => {
+    disposeEngineSession()
     setCode(source)
     setCompilerDiagnostics([])
     setActiveStdDocument(null)
-  }, [])
+  }, [disposeEngineSession])
 
   const handleTargetChange = useCallback((nextTarget) => {
-    if (nextTarget === 'engine-wasm' && target !== 'engine-wasm') {
-      setCode(DEFAULT_ENGINE_EXAMPLE.code)
-      setActiveStdDocument(null)
-    }
+    disposeEngineSession()
     setTarget(nextTarget)
-  }, [target])
+    setCode(nextTarget === 'engine-wasm' ? DEFAULT_ENGINE_EXAMPLE.code : SAMPLE_CODE)
+    setCompilerDiagnostics([])
+    setActiveStdDocument(null)
+  }, [disposeEngineSession])
+
+  const handleVersionChange = useCallback((nextVersion) => {
+    disposeEngineSession()
+    setVersion(nextVersion)
+    setCode(target === 'engine-wasm' ? DEFAULT_ENGINE_EXAMPLE.code : SAMPLE_CODE)
+    setCompilerDiagnostics([])
+    setActiveStdDocument(null)
+  }, [disposeEngineSession, target])
 
   if (engine.loading) {
     return (
@@ -385,15 +427,18 @@ export default function App() {
     <div className="playground-shell h-screen flex flex-col bg-az-90">
       <Header
         version={version}
-        onVersionChange={setVersion}
+        onVersionChange={handleVersionChange}
         target={target}
         onTargetChange={handleTargetChange}
         onRun={handleRun}
+        onStop={handleStop}
         onRunTests={handleRunTests}
         onClear={() => setResults(EMPTY_RESULTS)}
         isRunning={isRunning}
+        isGameRunning={isGameRunning}
         engineReady={engine.ready && (target !== 'engine-wasm' || Boolean(engineWasm.assets))}
         onLoadExample={loadExample}
+        code={code}
       />
 
       <div className="playground-workspace flex-1 flex flex-col md:flex-row min-h-0">
