@@ -36,13 +36,30 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Validate deployment key
+        env:
+          AZORA_SSH_PRIVATE_KEY: ${{ secrets.AZORA_SSH_PRIVATE_KEY }}
+        run: |
+          test -n "${AZORA_SSH_PRIVATE_KEY}" || {
+            echo "::error::Missing required production secret AZORA_SSH_PRIVATE_KEY"
+            exit 1
+          }
+
+      - name: Set up SSH
+        env:
+          AZORA_SSH_PRIVATE_KEY: ${{ secrets.AZORA_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${AZORA_SSH_PRIVATE_KEY}" > ~/.ssh/azora_deploy
+          chmod 600 ~/.ssh/azora_deploy
+          ssh-keyscan -H 152.239.116.142 >> ~/.ssh/known_hosts
+
       - name: Deploy to Azora VPS
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -rlptDz --delete --exclude='.htaccess'
-          path: dist/
-          remote_path: /var/www/code.azoralang.org/html/
-          remote_host: 152.239.116.142
-          remote_port: ${{ secrets.VPS_PORT || secrets.HOSTINGER_PORT || '22' }}
-          remote_user: ${{ secrets.VPS_USER || secrets.HOSTINGER_USER }}
-          remote_key: ${{ secrets.VPS_SSH_KEY || secrets.HOSTINGER_SSH_KEY }}
+        run: >
+          rsync -rlptDz --delete --exclude='.htaccess'
+          -e "ssh -i ~/.ssh/azora_deploy -o IdentitiesOnly=yes"
+          dist/ azora-deploy@152.239.116.142:/var/www/code.azoralang.org/html/
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/azora_deploy
