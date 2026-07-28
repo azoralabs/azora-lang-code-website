@@ -162,8 +162,8 @@ function growRequestMemory(exports, args) {
 export async function loadAzoraLanguageServer(version) {
   const basePath = `${import.meta.env.BASE_URL}azls/${version}`
   const [wasmResponse, workspaceResponse] = await Promise.all([
-    fetch(`${basePath}/azls.wasm`),
-    fetch(`${basePath}/stdlib.json`),
+    fetch(`${basePath}/azls.wasm`, { cache: 'no-store' }),
+    fetch(`${basePath}/stdlib.json`, { cache: 'no-store' }),
   ])
 
   if (!wasmResponse.ok) {

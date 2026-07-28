@@ -6,8 +6,7 @@ import { bracketMatching, indentOnInput, indentUnit } from '@codemirror/language
 import { forceLinting } from '@codemirror/lint'
 import { searchKeymap } from '@codemirror/search'
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
-import { azoraLanguage } from '../codemirror/azora-language.js'
-import { azoraHighlight, azoraTheme } from '../codemirror/azora-theme.js'
+import { azoraTheme } from '../codemirror/azora-theme.js'
 import { azlsExtensions, refreshAzoraDiagnostics } from '../codemirror/azls.js'
 
 export default function CodeEditor({
@@ -56,8 +55,6 @@ export default function CodeEditor({
         bracketMatching(),
         closeBrackets(),
         indentOnInput(),
-        azoraLanguage(document.source),
-        azoraHighlight,
         azoraTheme,
         EditorState.tabSize.of(4),
         indentUnit.of('    '),

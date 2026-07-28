@@ -93,6 +93,30 @@ const highlights = await invokeJson('azlsHighlight', [unicodeSource, corpus])
 assert.ok(highlights.some((span) => span.type === 'keyword'))
 assert.ok(highlights.some((span) => span.type === 'string'))
 
+const keywordSource = [
+  'module demo',
+  'func inspect(package: String, view: String, ref: String, mut: String) {',
+  '    fin shared = package',
+  '    fin weak = view',
+  '    trace { "${self} ${it} ${ref} ${mut} ${shared} ${weak}" }',
+  '}',
+].join('\n')
+const keywordHighlights = await invokeJson('azlsHighlight', [keywordSource, corpus])
+const highlightedKeywords = keywordHighlights
+  .filter((span) => span.type === 'keyword')
+  .map((span) => keywordSource.slice(span.start, span.end))
+assert.ok(highlightedKeywords.includes('module'))
+assert.ok(highlightedKeywords.includes('func'))
+assert.ok(highlightedKeywords.includes('fin'))
+assert.ok(highlightedKeywords.includes('trace'))
+for (const contextual of ['package', 'view', 'ref', 'mut', 'shared', 'weak', 'self', 'it']) {
+  assert.equal(
+    highlightedKeywords.includes(contextual),
+    false,
+    `${contextual} must not be highlighted as an Azora keyword`,
+  )
+}
+
 const interpolationSource = [
   'pack App { var name: String }',
   'impl App {',
