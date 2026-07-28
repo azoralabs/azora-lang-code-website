@@ -2,6 +2,7 @@ import { autocompletion } from '@codemirror/autocomplete'
 import { StateEffect, StateField } from '@codemirror/state'
 import { forEachDiagnostic, lintGutter, linter } from '@codemirror/lint'
 import { Decoration, EditorView, ViewPlugin, hoverTooltip } from '@codemirror/view'
+import { classifySemanticHighlights } from './semantic-usage.js'
 
 const setHighlights = StateEffect.define()
 export const refreshAzoraDiagnostics = StateEffect.define()
@@ -80,7 +81,10 @@ function analysisPlugin(server) {
       this.timer = setTimeout(async () => {
         const source = view.state.doc.toString()
         try {
-          const highlights = await server.highlight(source)
+          const highlights = classifySemanticHighlights(
+            source,
+            await server.highlight(source),
+          )
           if (generation !== this.generation || view.state.doc.toString() !== source) return
           view.dispatch({
             effects: setHighlights.of(highlightDecorations(highlights, view.state.doc.length)),

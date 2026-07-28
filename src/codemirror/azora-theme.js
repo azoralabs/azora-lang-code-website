@@ -15,8 +15,58 @@ export const azoraTheme = EditorView.theme({
   '.cm-azls-function': {
     color: '#E6C96B',
   },
+  '.cm-azls-spec-function': {
+    color: '#E6C96B',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-override-function': {
+    color: '#E6C96B',
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
   '.cm-azls-parameter': {
+    color: '#D9DADA',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-azls-property': {
+    color: '#D9DADA',
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-azls-spec-property': {
+    color: '#D9DADA',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-override-property': {
+    color: '#D9DADA',
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-azls-unused': {
     color: '#B8B8B8',
+  },
+  '.cm-azls-unused-parameter': {
+    color: '#B8B8B8',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-azls-unused-property': {
+    color: '#B8B8B8',
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-azls-unused-spec-function, .cm-azls-unused-spec-property': {
+    color: '#B8B8B8',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-unused-override-function, .cm-azls-unused-override-property': {
+    color: '#B8B8B8',
+    fontStyle: 'italic',
     textDecoration: 'underline',
     textUnderlineOffset: '3px',
   },
@@ -25,6 +75,22 @@ export const azoraTheme = EditorView.theme({
   },
   '.cm-azls-type': {
     color: '#5FA89F',
+  },
+  '.cm-azls-spec-type': {
+    color: '#5FA89F',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-zone': {
+    color: '#D9DADA',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-module-path': {
+    color: '#D9DADA',
+    fontStyle: 'italic',
+  },
+  '.cm-azls-generic': {
+    color: '#5BA3D0',
+    fontWeight: '700',
   },
   '.cm-azls-string, .cm-azls-char': {
     color: '#7DBF8A',
@@ -37,7 +103,7 @@ export const azoraTheme = EditorView.theme({
     fontStyle: 'italic',
   },
   '.cm-azls-annotation': {
-    color: '#E6C96B',
+    color: 'var(--color-pastel-orange)',
   },
   '.cm-azls-macro': {
     color: '#B06FA8',
@@ -171,7 +237,11 @@ const azoraHighlightStyle = HighlightStyle.define([
   { tag: tags.processingInstruction, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.operator, color: '#D9DADA' },
   { tag: tags.variableName, color: '#D9DADA' },
-  { tag: tags.definition(tags.variableName), color: '#B8B8B8' },
+  {
+    tag: tags.definition(tags.variableName),
+    color: '#D9DADA',
+    textDecoration: 'underline',
+  },
   { tag: tags.function(tags.variableName), color: '#E6C96B' },
   { tag: tags.special(tags.variableName), color: '#D9DADA' },
   { tag: tags.propertyName, color: '#D9DADA' },
@@ -192,8 +262,8 @@ const azoraHighlightStyle = HighlightStyle.define([
   { tag: tags.string, color: '#7DBF8A' },
   { tag: tags.character, color: '#7DBF8A' },
   { tag: tags.regexp, color: '#7DBF8A' },
-  { tag: tags.meta, color: '#E6C96B' },
-  { tag: tags.annotation, color: '#E6C96B' },
+  { tag: tags.meta, color: 'var(--color-pastel-orange)' },
+  { tag: tags.annotation, color: 'var(--color-pastel-orange)' },
   { tag: tags.comment, color: '#676767' },
   { tag: tags.lineComment, color: '#676767' },
   { tag: tags.blockComment, color: '#676767' },

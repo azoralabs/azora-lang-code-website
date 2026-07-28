@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { EditorState } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { azoraLanguage } from '../src/codemirror/azora-language.js'
+import { classifySemanticHighlights } from '../src/codemirror/semantic-usage.js'
 import { engineExamples } from '../src/data/engineExamples.js'
 import { createAzlsWorkspace } from '../src/engine/azlsLoader.js'
 
@@ -116,6 +117,28 @@ for (const contextual of ['package', 'view', 'ref', 'mut', 'shared', 'weak', 'se
     `${contextual} must not be highlighted as an Azora keyword`,
   )
 }
+
+const contextualWhereSource = [
+  'pack<T> Box where T == String { fin value: T }',
+  'func where(): Int { return 1 }',
+  'func main() {',
+  '    fin where = 2',
+  '    trace { "${where}" }',
+  '}',
+].join('\n')
+const contextualWhereHighlights = await invokeJson(
+  'azlsHighlight',
+  [contextualWhereSource, corpus],
+)
+const highlightedWhere = contextualWhereHighlights
+  .filter((span) =>
+    contextualWhereSource.slice(span.start, span.end) === 'where')
+  .map((span) => span.type)
+assert.deepEqual(
+  highlightedWhere,
+  ['keyword', 'function', 'variable', 'variable'],
+  '`where` must be a keyword only in a declaration constraint',
+)
 
 const interpolationSource = [
   'pack App { var name: String }',
@@ -240,6 +263,148 @@ assert.equal(
   false,
   'an undeclared call must not be function-colored',
 )
+
+const usageSource = [
+  'prop title: String = "Azora"',
+  'prop subtitle: String = "Language"',
+  'prop footer: String = "Unused"',
+  'func render(name: String, unusedParameter: String): String {',
+  '    fin greeting = name',
+  '    fin unusedLocal = subtitle',
+  '    return greeting + title',
+  '}',
+  'func unusedHelper(): Int { return 1 }',
+  'func main() { render("Azora", "unused") }',
+].join('\n')
+const usageHighlights = classifySemanticHighlights(
+  usageSource,
+  await invokeJson('azlsHighlight', [usageSource, corpus]),
+)
+const usageTokens = usageHighlights.map((span) => ({
+  type: span.type,
+  text: usageSource.slice(span.start, span.end),
+}))
+assert.ok(usageTokens.some((token) => token.type === 'parameter' && token.text === 'name'))
+assert.ok(usageTokens.some((token) =>
+  token.type === 'unused-parameter' && token.text === 'unusedParameter'))
+assert.ok(usageTokens.some((token) => token.type === 'unused' && token.text === 'unusedLocal'))
+assert.ok(usageTokens.some((token) => token.type === 'unused' && token.text === 'unusedHelper'))
+assert.ok(usageTokens.some((token) => token.type === 'property' && token.text === 'title'))
+assert.ok(usageTokens.some((token) =>
+  token.type === 'property' && token.text === 'subtitle'))
+assert.ok(usageTokens.some((token) =>
+  token.type === 'unused-property' && token.text === 'footer'))
+
+const genericSource = [
+  'pack<K, V> Pair {',
+  '    fin first: K',
+  '    fin second: V',
+  '}',
+  'impl<T> PrettyPrint for Pair {',
+  '    prop<D> metadata: D',
+  '}',
+  'func<T> identity(value: T): T { return value }',
+].join('\n')
+const genericHighlights = classifySemanticHighlights(
+  genericSource,
+  await invokeJson('azlsHighlight', [genericSource, corpus]),
+)
+const genericTokens = genericHighlights.map((span) => ({
+  type: span.type,
+  text: genericSource.slice(span.start, span.end),
+}))
+for (const name of ['K', 'V', 'T', 'D']) {
+  const occurrences = genericTokens.filter((token) => token.text === name)
+  assert.ok(occurrences.length > 0, `generic ${name} must be highlighted`)
+  assert.ok(
+    occurrences.every((token) => token.type === 'generic'),
+    `generic ${name} declarations and references must use generic highlighting: ${JSON.stringify(occurrences)}`,
+  )
+}
+assert.ok(
+  genericTokens.some((token) => token.type === 'type' && token.text === 'Pair'),
+  'concrete declared types must retain type highlighting',
+)
+
+const specSource = [
+  'spec Clock {',
+  '    func now(): Int',
+  '    func orphaned(): Int',
+  '    prop ticks: Int',
+  '}',
+  'pack SystemClock',
+  'impl Clock for SystemClock {',
+  '    func now(): Int { return 1 }',
+  '    prop ticks: Int = 1',
+  '}',
+  'friend zone std { }',
+  'func main() {',
+  '    std::println(Clock)',
+  '    std::println(SystemClock().now())',
+  '    std::println(SystemClock().ticks)',
+  '}',
+].join('\n')
+const specHighlights = classifySemanticHighlights(
+  specSource,
+  await invokeJson('azlsHighlight', [specSource, corpus]),
+)
+const typeAt = (offset) =>
+  specHighlights.find((span) => span.start === offset)?.type
+const specNow = specSource.indexOf('now')
+const overrideNow = specSource.indexOf('now', specNow + 1)
+const specTicks = specSource.indexOf('ticks')
+const overrideTicks = specSource.indexOf('ticks', specTicks + 1)
+const orphaned = specSource.indexOf('orphaned')
+assert.equal(typeAt(specNow), 'spec-function')
+assert.equal(typeAt(overrideNow), 'override-function')
+assert.equal(typeAt(specTicks), 'spec-property')
+assert.equal(typeAt(overrideTicks), 'override-property')
+assert.equal(typeAt(orphaned), 'unused-spec-function')
+for (const clock of [...specSource.matchAll(/\bClock\b/g)]) {
+  assert.equal(typeAt(clock.index), 'spec-type')
+}
+const specZoneOffsets = [...specSource.matchAll(/\bstd\b/g)].map((match) => match.index)
+assert.equal(specZoneOffsets.length, 4)
+assert.notEqual(typeAt(specZoneOffsets[0]), 'zone')
+for (const offset of specZoneOffsets.slice(1)) {
+  assert.equal(typeAt(offset), 'zone')
+}
+
+const zoneContextSource = [
+  'module demo',
+  'import std.io',
+  'import std.container.tuple',
+  'func main() { std::println("ok") }',
+].join('\n')
+const zoneContextHighlights = classifySemanticHighlights(
+  zoneContextSource,
+  await invokeJson('azlsHighlight', [zoneContextSource, corpus]),
+)
+const stdOffsets = [...zoneContextSource.matchAll(/\bstd\b/g)].map((match) => match.index)
+assert.equal(stdOffsets.length, 3)
+assert.equal(
+  zoneContextHighlights.find((span) => span.start === stdOffsets[0])?.type,
+  'module-path',
+  'an imported module path must receive module styling',
+)
+assert.equal(
+  zoneContextHighlights.find((span) => span.start === stdOffsets[1])?.type,
+  'module-path',
+  'a nested imported module path must receive module styling',
+)
+assert.equal(
+  zoneContextHighlights.find((span) => span.start === stdOffsets[2])?.type,
+  'zone',
+  'an identifier participating in :: access must be styled as a zone',
+)
+for (const name of ['io', 'container', 'tuple']) {
+  const offset = zoneContextSource.indexOf(name)
+  assert.equal(
+    zoneContextHighlights.find((span) => span.start === offset)?.type,
+    'module-path',
+    `the ${name} module path segment must receive module styling`,
+  )
+}
 
 const importedFunctionSource = [
   'module demo',
@@ -398,6 +563,52 @@ assert.equal(renderSinHover.found, true)
 assert.equal(
   workspace.documents[renderContext.documentIds[renderSinHover.document]].path,
   'std/math.az',
+)
+
+const tupleDocument = workspace.documents.find(
+  (document) => document.path === 'std/container/tuple.az',
+)
+const tupleContext = workspaceIndex.contextFor(tupleDocument.source)
+const prettyPrintOffset = tupleDocument.source.indexOf('PrettyPrint')
+const prettyPrintDefinition = await invokeJson('azlsDefinition', [
+  tupleDocument.source,
+  prettyPrintOffset + 2,
+  tupleContext.corpus,
+])
+assert.equal(
+  prettyPrintDefinition.found,
+  true,
+  'a spec used from within the same friend zone must resolve',
+)
+assert.equal(
+  workspace.documents[tupleContext.documentIds[prettyPrintDefinition.document]].path,
+  'std/traits/traits.az',
+)
+const { highlights: tupleHighlights } = await highlightInChunks(tupleDocument.source)
+assert.equal(
+  tupleHighlights.some((span) =>
+    span.start === prettyPrintOffset &&
+    span.type === 'spec-type' &&
+    tupleDocument.source.slice(span.start, span.end) === 'PrettyPrint'
+  ),
+  true,
+  'an imported spec reference must retain its spec semantic kind',
+)
+const classifiedTupleHighlights = classifySemanticHighlights(
+  tupleDocument.source,
+  tupleHighlights,
+)
+const tupleZoneDeclaration = tupleDocument.source.indexOf('friend zone std') +
+  'friend zone '.length
+assert.equal(
+  tupleHighlights.find((span) => span.start === tupleZoneDeclaration)?.type,
+  'identifier',
+  'AZLS must keep a named zone declaration as ordinary declaration text',
+)
+assert.notEqual(
+  classifiedTupleHighlights.find((span) => span.start === tupleZoneDeclaration)?.type,
+  'zone',
+  'a named zone declaration must not receive zone-use styling',
 )
 
 for (const path of ['engine/render/render.az', 'std/serializer.az']) {

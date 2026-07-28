@@ -143,6 +143,35 @@ func declarationKind(source: String, start: Int, end: Int): String {
     return "variable"
 }
 
+func contextualWhereIsKeyword(source: String, start: Int, end: Int): Bool {
+    if !rangeIs(source, start, end, "where") { return false }
+    var index = start
+    while index > 0 {
+        index -= 1
+        while index >= 0 && isSpace(charAt(source, index)) { index -= 1 }
+        if index < 0 { return false }
+        fin c = charAt(source, index)
+        if c == '{' || c == '}' || c == ';' { return false }
+        if isIdentifierPart(c) {
+            fin wordEnd = index + 1
+            while index > 0 && isIdentifierPart(charAt(source, index - 1)) { index -= 1 }
+            if isFunctionDeclarationRange(source, index, wordEnd) ||
+                rangeIs(source, index, wordEnd, "infx") ||
+                rangeIs(source, index, wordEnd, "pack") ||
+                rangeIs(source, index, wordEnd, "node") ||
+                rangeIs(source, index, wordEnd, "solo") ||
+                rangeIs(source, index, wordEnd, "spec") ||
+                rangeIs(source, index, wordEnd, "deco") ||
+                rangeIs(source, index, wordEnd, "impl") ||
+                rangeIs(source, index, wordEnd, "prop") ||
+                rangeIs(source, index, wordEnd, "typealias") {
+                return true
+            }
+        }
+    }
+    return false
+}
+
 func lineNumberAt(source: String, documentStart: Int, offset: Int): Int {
     var line = 1
     var index = documentStart
@@ -404,8 +433,10 @@ func addInterpolationHighlights(
                 rangeIs(source, identifierStart, index, "it") ||
                 parameterReferenceIsKnown(source, identifierStart, index) { kind = "parameter" }
             else if ord(charAt(source, identifierStart)) >= 65 &&
-                ord(charAt(source, identifierStart)) <= 90 &&
-                typeReferenceIsKnown(source, identifierStart, index, corpus) { kind = "type" }
+                ord(charAt(source, identifierStart)) <= 90 {
+                fin typeKind = typeReferenceKind(source, identifierStart, index, corpus)
+                if typeKind != "" { kind = typeKind }
+            }
             else {
                 var next = index
                 while next < end && isSpace(charAt(source, next)) { next += 1 }
@@ -555,15 +586,19 @@ func azlsHighlightRange(
             else if isKeywordRange(source, start, index) { kind = "keyword" }
             else if emit {
                 if expectedDeclarationKind == "function" { kind = "function" }
-                else if expectedDeclarationKind == "type" || expectedDeclarationKind == "enum" ||
-                    expectedDeclarationKind == "interface" { kind = "type" }
+                else if expectedDeclarationKind == "interface" { kind = "spec-type" }
+                else if expectedDeclarationKind == "type" ||
+                    expectedDeclarationKind == "enum" { kind = "type" }
                 else if expectedDeclarationKind == "annotation" { kind = "annotation" }
                 else if expectedDeclarationKind != "" { kind = "variable" }
+                else if contextualWhereIsKeyword(source, start, index) { kind = "keyword" }
                 else if rangeIs(source, start, index, "self") ||
                     rangeIs(source, start, index, "it") ||
                     parameterReferenceIsKnown(source, start, index) { kind = "parameter" }
-                else if ord(charAt(source, start)) >= 65 && ord(charAt(source, start)) <= 90 &&
-                    typeReferenceIsKnown(source, start, index, corpus) { kind = "type" }
+                else if ord(charAt(source, start)) >= 65 && ord(charAt(source, start)) <= 90 {
+                    fin typeKind = typeReferenceKind(source, start, index, corpus)
+                    if typeKind != "" { kind = typeKind }
+                }
                 else {
                     var next = index
                     while next < stringLength(source) && isSpace(charAt(source, next)) { next += 1 }
@@ -670,6 +705,41 @@ func functionDeclarationOffset(
     return -1
 }
 
+func declarationIsSpecAt(
+    source: String,
+    documentStart: Int,
+    documentEnd: Int,
+    declaration: Int
+): Bool {
+    var index = documentStart
+    var expectedKind = ""
+    while index < documentEnd {
+        fin c = charAt(source, index)
+        if c == '"' || c == '\'' { index = skipString(source, documentEnd, index) }
+        else if c == '/' {
+            fin end = skipComment(source, documentEnd, index)
+            if end > index { index = end } else { index += 1 }
+        }
+        else if expectedKind != "" && c == '<' {
+            index = skipGenericHeader(source, documentEnd, index)
+        }
+        else if isIdentifierStart(c) {
+            fin start = index
+            index += 1
+            while index < documentEnd && isIdentifierPart(charAt(source, index)) { index += 1 }
+            if expectedKind != "" {
+                if start == declaration { return expectedKind == "interface" }
+                expectedKind = ""
+            }
+            else if isDeclarationRange(source, start, index) {
+                expectedKind = declarationKind(source, start, index)
+            }
+        }
+        else { index += 1 }
+    }
+    return false
+}
+
 func moduleStart(source: String, documentStart: Int, documentEnd: Int): Int {
     fin marker = "module"
     var index = documentStart
@@ -769,9 +839,58 @@ func qualifierMatches(
     )
 }
 
+func useIsInsideZone(
+    source: String,
+    useStart: Int,
+    zoneSource: String,
+    zoneStart: Int,
+    zoneEnd: Int
+): Bool {
+    var index = 0
+    while index < useStart {
+        fin c = charAt(source, index)
+        if c == '"' || c == '\'' { index = skipString(source, stringLength(source), index) }
+        else if c == '/' {
+            fin end = skipComment(source, stringLength(source), index)
+            if end > index { index = end } else { index += 1 }
+        }
+        else if isIdentifierStart(c) {
+            fin start = index
+            index += 1
+            while index < stringLength(source) && isIdentifierPart(charAt(source, index)) {
+                index += 1
+            }
+            if rangeIs(source, start, index, "zone") {
+                var pathStart = index
+                while pathStart < stringLength(source) && isSpace(charAt(source, pathStart)) {
+                    pathStart += 1
+                }
+                var pathEnd = pathStart
+                while pathEnd < stringLength(source) {
+                    fin p = charAt(source, pathEnd)
+                    if isIdentifierPart(p) || p == ':' { pathEnd += 1 } else { break }
+                }
+                var open = pathEnd
+                while open < stringLength(source) && isSpace(charAt(source, open)) { open += 1 }
+                if pathEnd > pathStart && open < stringLength(source) &&
+                    charAt(source, open) == '{' {
+                    fin close = matchingBraceEnd(source, stringLength(source), open)
+                    if open < useStart && useStart < close &&
+                        rangeEquals(source, pathStart, pathEnd, zoneSource, zoneStart, zoneEnd) {
+                        return true
+                    }
+                }
+            }
+        }
+        else { index += 1 }
+    }
+    return false
+}
+
 /**
  * Named zones require `Zone::Type`. A declaration in `use zone` or
- * `use friend zone` intentionally remains bare-accessible.
+ * `use friend zone` intentionally remains bare-accessible. Code already
+ * inside the same named zone also has direct access to that zone's members.
  */
 func declarationZoneAllows(
     declarationSource: String,
@@ -825,6 +944,12 @@ func declarationZoneAllows(
                     if open < declaration && declaration < close && !isUsed && !isUsedFriend {
                         required = true
                         matches = qualifierMatches(
+                            source,
+                            useStart,
+                            declarationSource,
+                            pathStart,
+                            pathEnd
+                        ) || useIsInsideZone(
                             source,
                             useStart,
                             declarationSource,
@@ -1056,11 +1181,43 @@ func functionReferenceIsKnown(
     return corpusFunctionIsKnown(corpus, source, start, end, source, start)
 }
 
-func typeReferenceIsKnown(source: String, start: Int, end: Int, corpus: String): Bool {
+func typeReferenceKind(source: String, start: Int, end: Int, corpus: String): String {
     fin local = declarationOffset(source, 0, stringLength(source), source, start, end)
-    if local >= 0 { return true }
-    fin resolved = corpusDefinition(corpus, source, start, end, false, source, start)
-    return rangeStarts(resolved, 0, stringLength(resolved), "{\"found\":true")
+    if local >= 0 {
+        if declarationIsSpecAt(source, 0, stringLength(source), local) {
+            return "spec-type"
+        }
+        return "type"
+    }
+
+    var cursor = 0
+    while cursor < stringLength(corpus) {
+        fin field = findFrom(corpus, cursor, stringLength(corpus), fieldMarker())
+        if field < 0 { break }
+        fin sourceStart = field + stringLength(fieldMarker())
+        var sourceEnd = findFrom(corpus, sourceStart, stringLength(corpus), recordMarker())
+        if sourceEnd < 0 { sourceEnd = stringLength(corpus) }
+        fin found = declarationOffset(corpus, sourceStart, sourceEnd, source, start, end)
+        if found >= 0 && declarationIsVisible(
+            corpus,
+            sourceStart,
+            sourceEnd,
+            found,
+            source,
+            start
+        ) {
+            if declarationIsSpecAt(corpus, sourceStart, sourceEnd, found) {
+                return "spec-type"
+            }
+            return "type"
+        }
+        cursor = sourceEnd + stringLength(recordMarker())
+    }
+    return ""
+}
+
+func typeReferenceIsKnown(source: String, start: Int, end: Int, corpus: String): Bool {
+    return typeReferenceKind(source, start, end, corpus) != ""
 }
 
 /** Resolves local declarations, imports, and symbols in the stdlib corpus. */
