@@ -50,9 +50,13 @@ jobs:
           AZORA_SSH_PRIVATE_KEY: ${{ secrets.AZORA_SSH_PRIVATE_KEY }}
         run: |
           install -d -m 700 ~/.ssh
-          printf '%s\n' "${AZORA_SSH_PRIVATE_KEY}" > ~/.ssh/azora_deploy
+          printf '%s\n' "${AZORA_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/azora_deploy
           chmod 600 ~/.ssh/azora_deploy
-          ssh-keyscan -H 152.239.116.142 >> ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/azora_deploy > /dev/null
+          printf '%s\n' \
+            '152.239.116.142 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHyErlb4oDnC/OkQn46xal1tIlNhbba6t3Xvjh3Tcjth' \
+            > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy to Azora VPS
         run: >
