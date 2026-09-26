@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@import "./azora-design.css";
 @theme {
   /* Azora Neutral Scale */
   --color-az-10: #FBFBFB;
@@ -27,7 +28,7 @@
 
   /* Azora Accents */
   --color-az-green: #4EC962;
-  --color-az-red: #E63946;
+  --color-az-red: #E64A3A;
   --color-az-orange: #FF8C00;
   --color-az-yellow: #FFC107;
 
@@ -41,9 +42,9 @@
   --color-pastel-red: #D17179;
   --color-pastel-purple: #B06FA8;
 
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-code: 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  --font-code: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 
 html {

@@ -1,0 +1,387 @@
+/*
+ * Azora design system — the shared look across every azora-*-website.
+ *
+ * SOURCE OF TRUTH: azora-design/azora-design.css
+ * Do not edit the copies inside each site; run azora-design/sync.mjs instead.
+ *
+ * The tokens are the real Azora palette from
+ * azora-studio/azora-sdk-core/theme/palette/AzoraPalette.kt, and the surfaces,
+ * type scale and card treatment match the Azora ecosystem deck: a flat dark
+ * ground, hairline-bordered cards, magenta/blue accents, hexagon bullets and
+ * small uppercase kickers. No gradient bars, no accent stripes.
+ */
+
+/* ── Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  /* Neutral scale */
+  --az-10: #FBFBFB;
+  --az-20: #ECECEC;
+  --az-30: #D9D9D9;
+  --az-35: #C4C4C4;
+  --az-40: #B2B3B3;
+  --az-45: #A6A6A6;
+  --az-50: #9B9B9B;
+  --az-60: #676767;
+  --az-65: #4C4C4C;
+  --az-70: #313131;
+  --az-75: #2C2C2C;
+  --az-80: #262626;
+  --az-85: #202020;
+  --az-90: #1A1A1A;
+  --az-95: #141414;
+
+  /* Brand */
+  --az-primary: #D14EEA;
+  --az-primary-deep: #8F2EB4;
+  --az-secondary: #4E93EA;
+  --az-secondary-deep: #2E60B4;
+
+  /* Status */
+  --az-green: #4EC962;
+  --az-orange: #FF8C00;
+  --az-red: #E64A3A;
+  --az-yellow: #FFC107;
+
+  /* Semantic surfaces — the deck's four planes */
+  --az-ground: var(--az-90);   /* page background        */
+  --az-surface: var(--az-85);  /* cards                  */
+  --az-raised: var(--az-80);   /* cards on cards         */
+  --az-sunken: var(--az-95);   /* code blocks, wells     */
+  --az-line: var(--az-75);     /* hairline borders       */
+
+  /* Semantic text */
+  --az-text: var(--az-10);
+  --az-body: var(--az-35);
+  --az-muted: var(--az-50);
+  --az-faint: var(--az-60);
+
+  /* Type */
+  --az-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --az-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* Rhythm — one scale, used everywhere */
+  --az-gap-1: 0.5rem;
+  --az-gap-2: 0.75rem;
+  --az-gap-3: 1.25rem;
+  --az-gap-4: 2rem;
+  --az-gap-5: 3rem;
+  --az-gap-6: 5rem;
+
+  --az-radius: 10px;
+  --az-radius-sm: 6px;
+  --az-radius-pill: 999px;
+
+  --az-shell: 1200px;         /* max content width */
+  --az-gutter: 1.5rem;
+
+  --az-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Base ────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    background-color: var(--az-ground);
+    color: var(--az-text);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--az-font);
+    /* Transparent on purpose: body::before is a negative-z pseudo element, so
+       an opaque background here paints straight over the shared backdrop.
+       html carries the ground colour instead. */
+    background-color: transparent;
+    color: var(--az-body);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre, kbd, samp { font-family: var(--az-mono); }
+
+  a { color: var(--az-secondary); text-decoration: none; }
+  a:hover { color: var(--az-primary); }
+
+  ::selection { background: var(--az-primary); color: #fff; }
+
+  :focus-visible {
+    outline: 2px solid var(--az-secondary);
+    outline-offset: 2px;
+    border-radius: var(--az-radius-sm);
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--az-70); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--az-65); }
+}
+
+/* ── Atmosphere ──────────────────────────────────────────────────────── */
+@layer base {
+  /*
+   * The shared backdrop: one moonlit photograph, the two brand glows, and a
+   * vertical veil that deepens to the page ground so body text keeps its
+   * contrast no matter how long the page is. Every site uses the same image,
+   * distributed by sync.mjs as a 196 KB WebP.
+   *
+   * Opt a page out with <body class="az-no-atmosphere">.
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--az-ground);
+    background-image:
+      linear-gradient(180deg,
+        color-mix(in srgb, var(--az-ground) 62%, transparent) 0%,
+        color-mix(in srgb, var(--az-ground) 86%, transparent) 46%,
+        var(--az-ground) 100%),
+      radial-gradient(58rem 42rem at 10% 104%, rgba(209, 78, 234, 0.16), transparent 68%),
+      radial-gradient(52rem 38rem at 92% -6%, rgba(78, 147, 234, 0.13), transparent 68%),
+      url('/assets/azora-backdrop.webp');
+    background-position: center top, center, center, center top;
+    background-size: cover, auto, auto, cover;
+    background-repeat: no-repeat;
+  }
+
+  body.az-no-atmosphere::before { display: none; }
+
+  /* Content sits above the atmosphere. */
+  #root, body > main, body > nav, body > footer { position: relative; z-index: 0; }
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+.az-shell {
+  width: 100%;
+  max-width: var(--az-shell);
+  margin-inline: auto;
+  padding-inline: var(--az-gutter);
+}
+
+.az-section { padding-block: var(--az-gap-6); }
+
+.az-grid { display: grid; gap: var(--az-gap-3); }
+.az-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.az-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (max-width: 900px) {
+  .az-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .az-grid-2, .az-grid-3 { grid-template-columns: minmax(0, 1fr); }
+  :root { --az-gap-6: 3rem; --az-gutter: 1rem; }
+}
+
+/* ── Type ────────────────────────────────────────────────────────────── */
+.az-kicker {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--az-primary);
+  margin-bottom: var(--az-gap-2);
+}
+
+.az-title {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--az-text);
+  margin: 0 0 var(--az-gap-3);
+}
+
+.az-heading {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--az-text);
+  margin: 0 0 var(--az-gap-1);
+}
+
+.az-lead {
+  font-size: 1.02rem;
+  color: var(--az-body);
+  max-width: 62ch;
+  margin: 0 0 var(--az-gap-3);
+}
+
+.az-text { color: var(--az-body); margin: 0 0 var(--az-gap-2); }
+.az-muted { color: var(--az-muted); font-size: 0.92rem; }
+.az-caption { color: var(--az-faint); font-size: 0.8rem; }
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.az-card {
+  background: var(--az-surface);
+  border: 1px solid var(--az-line);
+  border-radius: var(--az-radius);
+  padding: var(--az-gap-3);
+  box-shadow: var(--az-shadow);
+}
+
+/* A card that is also a link: lift, never a colour stripe. */
+a.az-card { display: block; color: inherit; transition: border-color .15s, background .15s; }
+a.az-card:hover { border-color: var(--az-65); background: var(--az-raised); }
+
+.az-well {
+  background: var(--az-sunken);
+  border: 1px solid var(--az-line);
+  border-radius: var(--az-radius);
+  padding: var(--az-gap-3);
+}
+
+/* ── Hexagon bullet — the logo's shape, the deck's motif ─────────────── */
+.az-hex {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.62rem;
+  flex: none;
+  background: var(--az-secondary);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.az-hex-primary { background: var(--az-primary); }
+
+.az-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--az-gap-2); }
+.az-list li { display: flex; gap: var(--az-gap-2); align-items: flex-start; }
+.az-list li::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.62rem;
+  margin-top: 0.42em;
+  flex: none;
+  background: var(--az-secondary);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* ── Pill / badge ────────────────────────────────────────────────────── */
+.az-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.25em 0.7em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: var(--az-radius-pill);
+  border: 1px solid var(--az-line);
+  background: var(--az-sunken);
+  color: var(--az-muted);
+}
+.az-pill-green  { color: var(--az-green);  border-color: var(--az-green); }
+.az-pill-orange { color: var(--az-orange); border-color: var(--az-orange); }
+.az-pill-red    { color: var(--az-red);    border-color: var(--az-red); }
+
+/* ── Stat callout ────────────────────────────────────────────────────── */
+.az-stat-value {
+  font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--az-primary);
+  letter-spacing: -0.02em;
+}
+.az-stat-label {
+  margin-top: var(--az-gap-1);
+  font-size: 0.85rem;
+  color: var(--az-muted);
+}
+
+/* ── Button ──────────────────────────────────────────────────────────── */
+.az-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--az-gap-1);
+  padding: 0.62em 1.25em;
+  border-radius: var(--az-radius-sm);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.az-btn-primary { background: var(--az-primary); color: #fff; }
+.az-btn-primary:hover { background: var(--az-primary-deep); color: #fff; }
+.az-btn-ghost { background: transparent; border-color: var(--az-line); color: var(--az-body); }
+.az-btn-ghost:hover { border-color: var(--az-65); color: var(--az-text); background: var(--az-surface); }
+
+/* ── Code ────────────────────────────────────────────────────────────── */
+.az-code {
+  background: var(--az-sunken);
+  border: 1px solid var(--az-line);
+  border-radius: var(--az-radius);
+  padding: var(--az-gap-3);
+  overflow-x: auto;
+  font-family: var(--az-mono);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--az-30);
+}
+
+/* Azora syntax colours — the same palette the playground and IDE use. */
+.az-tok-keyword  { color: #D16B8E; font-weight: 700; }
+.az-tok-type     { color: #5FA89F; }
+.az-tok-func     { color: #E6C96B; }
+.az-tok-string   { color: #7DBF8A; }
+.az-tok-number   { color: #ECECEC; }
+.az-tok-comment  { color: #676767; font-style: italic; }
+.az-tok-punct    { color: #B2B3B3; }
+.az-tok-generic  { color: #5BA3D0; font-weight: 700; }
+.az-tok-macro    { color: #B06FA8; font-weight: 700; }
+
+/* ── Topbar links ────────────────────────────────────────────────────── */
+/*
+ * For the app-style headers (docs, the books, the playground) that have their
+ * own chrome rather than the marketing .site-nav. Same icon treatment, so the
+ * whole ecosystem's top bars read as one family.
+ */
+.az-topbar-links {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 18px;
+  font-size: 0.8rem;
+}
+
+.az-topbar-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+  color: var(--az-body);
+  transition: color 180ms ease;
+}
+
+.az-topbar-links a:hover { color: var(--az-text); }
+
+.az-topbar-links svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.8;
+}
+
+.az-topbar-links a:hover svg { opacity: 1; }
+
+@media (max-width: 720px) {
+  .az-topbar-links a span,
+  .az-topbar-links a { font-size: 0; gap: 0; }
+  .az-topbar-links { gap: 14px; }
+  .az-topbar-links svg { width: 17px; height: 17px; }
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.az-rule { height: 1px; background: var(--az-line); border: 0; margin-block: var(--az-gap-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

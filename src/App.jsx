@@ -16,7 +16,7 @@ import { DEFAULT_ENGINE_EXAMPLE } from './data/engineExamples.js'
 const LEGACY_LS_CODE_KEY = 'azora-playground-code'
 const LS_VERSION_KEY = 'azora-playground-version'
 const LS_TARGET_KEY = 'azora-playground-target'
-const ACTIVE_TARGETS = new Set(['interpreted', 'javascript', 'wasm', 'engine-wasm', 'llvm-ir'])
+const ACTIVE_TARGETS = new Set(['interpreted', 'wasm', 'engine-wasm', 'llvm-ir'])
 const EMPTY_RESULTS = { console: [], preprocessed: '', javascript: '', llvmIr: '', wasm: '' }
 const PLAYGROUND_URI = 'azora-playground:///main.az'
 

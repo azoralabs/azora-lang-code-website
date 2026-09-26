@@ -13,14 +13,14 @@ export const azoraTheme = EditorView.theme({
     fontWeight: '700',
   },
   '.cm-azls-function': {
-    color: '#E6C96B',
+    color: '#D9DADA',
   },
   '.cm-azls-spec-function': {
-    color: '#E6C96B',
+    color: '#D9DADA',
     fontStyle: 'italic',
   },
   '.cm-azls-override-function': {
-    color: '#E6C96B',
+    color: '#D9DADA',
     fontStyle: 'italic',
     textDecoration: 'underline',
     textUnderlineOffset: '3px',
@@ -80,7 +80,7 @@ export const azoraTheme = EditorView.theme({
     color: '#5FA89F',
     fontStyle: 'italic',
   },
-  '.cm-azls-zone': {
+  '.cm-azls-zone, .cm-azls-realm': {
     color: '#D9DADA',
     fontStyle: 'italic',
   },
@@ -89,8 +89,11 @@ export const azoraTheme = EditorView.theme({
     fontStyle: 'italic',
   },
   '.cm-azls-generic': {
-    color: '#5BA3D0',
+    color: 'var(--color-pastel-orange)',
     fontWeight: '700',
+  },
+  '.cm-azls-label': {
+    color: '#5BA3D0',
   },
   '.cm-azls-string, .cm-azls-char': {
     color: '#7DBF8A',
@@ -103,7 +106,7 @@ export const azoraTheme = EditorView.theme({
     fontStyle: 'italic',
   },
   '.cm-azls-annotation': {
-    color: 'var(--color-pastel-orange)',
+    color: '#E6C96B',
   },
   '.cm-azls-macro': {
     color: '#B06FA8',
@@ -242,7 +245,7 @@ const azoraHighlightStyle = HighlightStyle.define([
     color: '#D9DADA',
     textDecoration: 'underline',
   },
-  { tag: tags.function(tags.variableName), color: '#E6C96B' },
+  { tag: tags.function(tags.variableName), color: '#D9DADA' },
   { tag: tags.special(tags.variableName), color: '#D9DADA' },
   { tag: tags.propertyName, color: '#D9DADA' },
   { tag: tags.definition(tags.propertyName), color: '#D9DADA' },
@@ -250,9 +253,9 @@ const azoraHighlightStyle = HighlightStyle.define([
   { tag: tags.definition(tags.typeName), color: '#5FA89F' },
   { tag: tags.className, color: '#5FA89F' },
   { tag: tags.namespace, color: '#5FA89F' },
-  { tag: tags.labelName, color: '#5FA89F' },
+  { tag: tags.labelName, color: '#5BA3D0' },
   { tag: tags.special(tags.name), color: '#B06FA8', fontWeight: 'bold' },
-  { tag: tags.standard(tags.name), color: '#E6C96B' },
+  { tag: tags.standard(tags.name), color: '#D9DADA' },
   { tag: tags.atom, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.bool, color: '#D16B8E', fontWeight: 'bold' },
   { tag: tags.null, color: '#D16B8E', fontWeight: 'bold' },
@@ -262,8 +265,8 @@ const azoraHighlightStyle = HighlightStyle.define([
   { tag: tags.string, color: '#7DBF8A' },
   { tag: tags.character, color: '#7DBF8A' },
   { tag: tags.regexp, color: '#7DBF8A' },
-  { tag: tags.meta, color: 'var(--color-pastel-orange)' },
-  { tag: tags.annotation, color: 'var(--color-pastel-orange)' },
+  { tag: tags.meta, color: '#E6C96B' },
+  { tag: tags.annotation, color: '#E6C96B' },
   { tag: tags.comment, color: '#676767' },
   { tag: tags.lineComment, color: '#676767' },
   { tag: tags.blockComment, color: '#676767' },

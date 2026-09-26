@@ -1,5 +1,8 @@
 // Example snippets shown in the playground's Example selector.
-// Every example compiles and runs on all playground code-generation targets.
+//
+// Verified against the compiler, not by hand: `node scripts/check-examples.mjs`
+// type-checks every snippet here and `--run` executes the ones with a main().
+// Keep that green when editing.
 export const codeExamples = [
   {
     title: 'Hello World',
@@ -8,7 +11,7 @@ export const codeExamples = [
 import std.io
 
 func main() {
-    std::println("Hello, world!")
+    println("Hello, world!")
 }`,
   },
   {
@@ -25,8 +28,8 @@ func main() {
     fin name = "Azora"
     let greeting = "Hello, \${name}!"
 
-    std::println(greeting)
-    std::println("count is \${count}")
+    println(greeting)
+    println("count is \${count}")
 }`,
   },
   {
@@ -45,8 +48,8 @@ func factorial(n: Int): Int {
 }
 
 func main() {
-    std::println("\${add(3, 4)}")
-    std::println("\${factorial(5)}")
+    println("\${add(3, 4)}")
+    println("\${factorial(5)}")
 }`,
   },
   {
@@ -60,21 +63,21 @@ func main() {
     for i in 1..10 {
         sum += i
     }
-    std::println("sum 1..10 = \${sum}")
+    println("sum 1..10 = \${sum}")
 
     var i = 0
     loop {
         i += 1
         if i == 7 { break }
     }
-    std::println("stopped at \${i}")
+    println("stopped at \${i}")
 
     var evens = 0
     for n in 0..<10 {
         if n % 2 != 0 { continue }
         evens += 1
     }
-    std::println("even count = \${evens}")
+    println("even count = \${evens}")
 }`,
   },
   {
@@ -85,23 +88,23 @@ import std.io
 import std.container.list
 
 func main() {
-    var nums = std::mutableListOf<Int>()
+    var nums = mutableListOf<Int>()
     nums.add(10)
     nums.add(20)
     nums.add(30)
-    std::println(nums[0])
-    std::println(nums.size)
+    println(nums[0])
+    println(nums.size)
 
     nums.add(40)
     nums.set(0, 99)
-    std::println(nums.size)
-    std::println(nums[0])
+    println(nums.size)
+    println(nums[0])
 
     var total = 0
     for i in 0..<nums.size {
         total += nums[i]
     }
-    std::println("total = \${total}")
+    println("total = \${total}")
 }`,
   },
   {
@@ -114,10 +117,10 @@ func main() {
     var name = "Azora"
     var n = 3
 
-    std::println("Hello, \$name!")
-    std::println("\${n} x \${n} = \${n * n}")
-    std::println("ab" * 3)
-    std::println("length is \${name.length}")
+    println("Hello, \$name!")
+    println("\${n} x \${n} = \${n * n}")
+    println("ab" * 3)
+    println("length is \${name.length}")
 }`,
   },
   {
@@ -134,15 +137,15 @@ pack Point {
 
 func main() {
     var p = Point(3, 4)
-    std::println("\${p.x}, \${p.y}")
+    println("\${p.x}, \${p.y}")
 
     p.x = 10
     p.y += 1
-    std::println("\${p.x}, \${p.y}")
+    println("\${p.x}, \${p.y}")
 
-    var points = std::listOf(Point(1, 1), Point(2, 2), Point(3, 3))
+    var points = listOf(Point(1, 1), Point(2, 2), Point(3, 3))
     var last: Point = points[2]
-    std::println("last = \${last.x}, \${last.y}")
+    println("last = \${last.x}, \${last.y}")
 }`,
   },
   {
@@ -155,16 +158,16 @@ func main() {
     var n = 10
     n += 5
     n *= 2
-    std::println(n)
+    println(n)
 
-    std::println(17 / 5)
-    std::println(17 % 5)
+    println(17 / 5)
+    println(17 % 5)
 
     var sum = 0
     for i in 1..<5 {
         sum += i
     }
-    std::println("sum 1..<5 = \${sum}")
+    println("sum 1..<5 = \${sum}")
 }`,
   },
   {
@@ -173,14 +176,14 @@ func main() {
 
 import std.io
 
+scope geometry {
+    func area(w: Int, h: Int): Int { return w * h }
+    func perimeter(w: Int, h: Int): Int { return 2 * (w + h) }
+}
+
 func main() {
-    var x = 1
-    zone {
-        var x = 2
-        std::println("inner \${x}")
-        std::println("outer \${::x}")
-    }
-    std::println("after \${x}")
+    println("area: \${geometry::area(3, 4)}")
+    println("perimeter: \${geometry::perimeter(3, 4)}")
 }`,
   },
   {
@@ -211,15 +214,15 @@ func factorial(n: Int): Int {
 }
 
 test "factorial of 5 is 120" {
-    assert factorial(5) == 120 { "5! should be 120" }
+    assert factorial(5) == 120 panic "5! should be 120"
 }
 
 test "factorial of 0 is 1" {
-    assert factorial(0) == 1 { "0! should be 1" }
+    assert factorial(0) == 1 panic "0! should be 1"
 }
 
 func main() {
-    std::println("running tests...")
+    println("running tests...")
 }`,
   },
   {
@@ -244,8 +247,8 @@ func action(l: Light): String {
 }
 
 func main() {
-    std::println(action(Light.Green))
-    std::println(action(Light.Red))
+    println(action(Light.Green))
+    println(action(Light.Red))
 }`,
   },
   {
@@ -255,18 +258,18 @@ func main() {
 import std.io
 import std.container.tuple
 
-func divmod(a: Int, b: Int): std::Tuple<Int, Int> {
-    return std::tupleOf(a / b, a % b)
+func divmod(a: Int, b: Int): (Int, Int) {
+    return (a / b, a % b)
 }
 
 func main() {
     fin r = divmod(17, 5)
-    std::println("quotient: \${r.0}")
-    std::println("remainder: \${r.1}")
+    println("quotient: \${r.0}")
+    println("remainder: \${r.1}")
 
-    fin pair = std::tupleOf(1, "hello")
-    std::println(pair.0)
-    std::println(pair.1)
+    fin pair = (1, "hello")
+    println(pair.0)
+    println(pair.1)
 }`,
   },
   {
@@ -281,13 +284,13 @@ func safeDiv(a: Int, b: Int): Int {
 }
 
 func main() {
-    std::println(safeDiv(10, 2) catch -1)
-    std::println(safeDiv(10, 0) catch -1)
+    println(safeDiv(10, 2) catch -1)
+    println(safeDiv(10, 0) catch -1)
 
     try {
         throw "boom"
     } catch { e ->
-        std::println("caught: " + e)
+        println("caught: " + e)
     }
 }`,
   },
@@ -303,10 +306,10 @@ pack Point {
 }
 
 impl Point {
-    func lengthSquared(): Int { self& ->
+    func &.lengthSquared(): Int {
         return self.x * self.x + self.y * self.y
     }
-    func moveBy(dx: Int, dy: Int) { self! ->
+    func !.moveBy(dx: Int, dy: Int) {
         self.x = self.x + dx
         self.y = self.y + dy
     }
@@ -314,9 +317,9 @@ impl Point {
 
 func main() {
     var p = Point(3, 4)
-    std::println(p.lengthSquared())
+    println(p.lengthSquared())
     p.moveBy(10, 20)
-    std::println(p.lengthSquared())
+    println(p.lengthSquared())
 }`,
   },
 
@@ -331,162 +334,130 @@ pack Counter {
 }
 
 impl Counter {
-    func bump() { self! ->
+    // & is a shared, read-only receiver; ! is exclusive and may write.
+    func !.bump() {
         self.value = self.value + 1
     }
-}
-
-func peek()[self: Counter&]: Int {
-    return self.value
+    func &.peek(): Int {
+        return self.value
+    }
 }
 
 func main() {
     var c = Counter(40)
     c.bump()
-    std::println("value=\${c.peek()}")
+    println("value=\${c.peek()}")
 }`,
   },
   {
-    title: 'Reactive mem',
+    title: 'Reactive remember',
     code: `module playground
 
 import std.io
 
-@Reactive
-func searchSession() {
-    // mem is transient state owned by this reactive instance.
-    // It survives reactive re-execution, but not owner recreation.
-    mem query: String = ""
-    mem resultCount: Int = 0
+react func searchSession() {
+    // remember state survives a rerun of this reactive owner,
+    // but not the owner being recreated.
+    remember var query: String = ""
+    remember var resultCount: Int = 0
 
-    // No dependency list: dependencies are inferred from values read here.
+    // No dependency list: dependencies are inferred from what the body reads.
     effect {
-        trace .Debug { "Rendering \${resultCount} results for '\${query}'" }
+        println("Rendering \${resultCount} results for '\${query}'")
     }
 
     // One explicit dependency.
     effect query {
-        trace .Info { "Searching for '\${query}'" }
+        println("Searching for '\${query}'")
     }
 
     query = "Azora"
     resultCount = 12
 
     effect defer {
-        trace .Debug { "Closing transient search session" }
+        println("Closing transient search session")
     }
 }
 
-@Reactive
-func main() {
+react func main() {
     searchSession()
 }`,
   },
   {
-    title: 'Reactive rem',
-    code: `module playground
-
-@Reactive
-func checkoutDraft() {
-    // rem is saveable state. A host may serialize and restore it after
-    // recreation, navigation, process suspension, or page restoration.
-    rem customer: String = "Ada"
-    rem itemCount: Int = 1
-    rem delivery: String = "Standard"
-
-    // Re-run when either explicitly listed value changes.
-    effect [itemCount, delivery] {
-        trace .Info {
-            "Draft updated: \${itemCount} item(s), \${delivery} delivery"
-        }
-    }
-
-    // Automatic tracking sees customer in the body.
-    effect {
-        trace .Debug { "Checkout belongs to \${customer}" }
-    }
-
-    itemCount = 3
-    delivery = "Express"
-    customer = "Ada Lovelace"
-
-    effect defer {
-        trace .Info { "Persisting checkout draft" }
-    }
-}
-
-@Reactive
-func main() {
-    checkoutDraft()
-}`,
-  },
-  {
-    title: 'Reactive ret',
-    code: `module playground
-
-@Reactive
-func playbackSession() {
-    // ret is retained state. It survives temporary owner removal and can be
-    // reattached when the same retained identity returns.
-    ret track: String = "Northern Lights"
-    ret elapsedSeconds: Int = 0
-    ret playing: Bool = false
-
-    effect playing {
-        trace .Info {
-            if playing { "Playback started" } else { "Playback paused" }
-        }
-    }
-
-    effect [track, elapsedSeconds] {
-        trace .Debug { "\${track} at \${elapsedSeconds}s" }
-    }
-
-    playing = true
-    elapsedSeconds = 42
-
-    // Deferred effects clean up resources when the retained owner is disposed.
-    effect defer {
-        trace .Warn { "Releasing playback session for '\${track}'" }
-    }
-}
-
-@Reactive
-func main() {
-    playbackSession()
-}`,
-  },
-  {
-    title: 'Iterator Loop Continue',
+    title: 'Reactive retain',
     code: `module playground
 
 import std.io
 
-pack Iter {
-    var i: Int
-    var resets: Int
+pack Customer {
+    var name: String
 }
 
-impl Iter {
-    func reset() { self! ->
-        self.resets = self.resets + 1
-        self.i = 0
+react func customerPanel() {
+    // retain survives the owner being recreated, within the process.
+    retain fin customer = Customer("Ada")
+    remember var visits: Int = 0
+
+    effect {
+        println("\${customer.name} has \${visits} visit(s)")
     }
-    func hasNext(): Bool { self& ->
-        return self.i < 2
-    }
-    func next(): Int { self! ->
-        self.i = self.i + 1
-        return self.i
-    }
+
+    visits = visits + 1
 }
+
+react func main() {
+    customerPanel()
+}`,
+  },
+  {
+    title: 'Reactive preserve',
+    code: `module playground
+
+import std.io
+
+pack Draft {
+    var body: String
+}
+
+react func editor() {
+    // preserve state can be snapshotted and restored by a host.
+    preserve var draft = Draft("")
+    remember var saved: Bool = false
+
+    effect draft {
+        println("draft is now '\${draft.body}'")
+    }
+
+    draft = Draft("hello from Azora")
+    saved = true
+    println("saved=\${saved}")
+}
+
+react func main() {
+    editor()
+}`,
+  },
+  {
+    title: 'Iteration',
+    code: `module playground
+
+import std.io
 
 func main() {
-    var it = Iter(1, 0)
-    loop it continue {
-        std::println(it.next())
+    fin rows = [10, 20, 30]
+
+    // 'for x in <iterable>' walks something; 'loop { }' repeats.
+    for row in rows {
+        if row == 20 { continue }
+        println(row)
     }
-    std::println("resets=\${it.resets}")
+
+    var n = 0
+    loop {
+        n = n + 1
+        if n == 3 { break }
+    }
+    println("n=\${n}")
 }`,
   },
   {
@@ -500,17 +471,19 @@ func apply(f: (Int) -> Int, x: Int): Int {
 }
 
 func makeAdder(n: Int): (Int) -> Int {
-    return { x: Int -> x + n }
+    // A lambda states what it captures: [n] copies, [n.&] borrows,
+    // [n.!] borrows mutably, [&] captures whatever the body reads.
+    return [n] { x: Int -> x + n }
 }
 
 func main() {
     var double = { x: Int -> x * 2 }
-    std::println(double(21))
+    println(double(21))
 
-    std::println(apply({ x: Int -> x * x }, 5))
+    println(apply({ x: Int -> x * x }, 5))
 
     var add10 = makeAdder(10)
-    std::println(add10(32))
+    println(add10(32))
 }`,
   },
   {
@@ -519,11 +492,11 @@ func main() {
 
 import std.io
 
-func identity<T>(x: T): T {
+func<T> identity(x: T): T {
     return x
 }
 
-func first<T, U>(a: T, b: U): T {
+func<T, U> first(a: T, b: U): T {
     return a
 }
 
@@ -532,12 +505,12 @@ pack Box<T> {
 }
 
 func main() {
-    std::println(identity(42))
-    std::println(identity("hello"))
-    std::println(first(10, "world"))
+    println(identity(42))
+    println(identity("hello"))
+    println(first(10, "world"))
 
     var b = Box(99)
-    std::println(b.value)
+    println(b.value)
 }`,
   },
   {
@@ -556,14 +529,14 @@ spec Describable {
 }
 
 impl Describable for Point {
-    func describe(): String { self& ->
+    func &.describe(): String {
         return "Point(" + self.x + ", " + self.y + ")"
     }
 }
 
 func main() {
     var p = Point(3, 4)
-    std::println(p.describe())
+    println(p.describe())
 }`,
   },
   {
@@ -578,10 +551,10 @@ pack Vec2 {
 }
 
 impl Vec2 {
-    func plus(other: Vec2): Vec2 { self& ->
+    func &.plus(other: Vec2): Vec2 {
         return Vec2(self.x + other.x, self.y + other.y)
     }
-    func equals(other: Vec2): Bool { self& ->
+    func &.equals(other: Vec2): Bool {
         return self.x == other.x && self.y == other.y
     }
 }
@@ -590,24 +563,27 @@ func main() {
     var a = Vec2(1, 2)
     var b = Vec2(3, 4)
     var c = a + b
-    std::println(c.x)
-    std::println(c.y)
-    std::println(a == Vec2(1, 2))
+    println(c.x)
+    println(c.y)
+    println(a == Vec2(1, 2))
 }`,
   },
   {
-    title: 'Infix Functions',
+    title: 'Infix Macros',
     code: `module playground
 
 import std.io
 
-infx Int.scaledBy(factor: Int): Int {
-    return self * factor
+func scaled(value: Int, factor: Int): Int {
+    return value * factor
 }
 
+// Infix calls are declared as macros, not as a function form.
+macro $a @scaledBy $b => scaled($a, $b)
+
 func main() {
-    std::println(2 scaledBy 3)
-    std::println(10 scaledBy 5)
+    println(2 @scaledBy 3)
+    println(10 @scaledBy 5)
 }`,
   },
   {
@@ -619,11 +595,11 @@ import std.io
 func main() {
     var a = 0b1100
     var b = 0b1010
-    std::println(a & b)
-    std::println(a | b)
-    std::println(a ^ b)
-    std::println(~a)
-    std::println(a << 2)
+    println(a & b)
+    println(a | b)
+    println(a ^ b)
+    println(~a)
+    println(a << 2)
 }`,
   },
   {
@@ -637,24 +613,24 @@ func greet(name: String, greeting: String = "Hello"): String {
 }
 
 func main() {
-    std::println(greet("Azora"))
-    std::println(greet("World", "Hi"))
+    println(greet("Azora"))
+    println(greet("World", "Hi"))
 }`,
   },
   {
-    title: 'Guard',
+    title: 'Early Return',
     code: `module playground
 
 import std.io
 
 func half(n: Int): Int {
-    guard n > 0 else { return 0 }
+    if n <= 0 { return 0 }
     return n / 2
 }
 
 func main() {
-    std::println(half(10))
-    std::println(half(-3))
+    println(half(10))
+    println(half(-3))
 }`,
   },
   {
@@ -662,17 +638,26 @@ func main() {
     code: `module playground
 
 import std.io
-import std.container.array
 
-func first(nums: Array<Int>): Int? {
-    if nums.size == 0 { return null }
-    return nums[0]
+pack User {
+    var nickname: String?
 }
 
 func main() {
-    std::println(first(std::arrayOf(7, 8, 9)))
-    var v = first(std::arrayOf<Int>())
-    if v == null { std::println("empty") }
+    var maybe: Int? = null
+    println(maybe ?? 7)
+
+    maybe = 42
+    println(maybe ?? 7)
+
+    // A null check narrows the type for the rest of the branch.
+    if maybe != null {
+        println(maybe + 1)
+    }
+
+    fin user = User(null)
+    println(user.nickname ?? "anonymous")
+    println(user.nickname?.size ?? 0)
 }`,
   },
   {
@@ -684,19 +669,19 @@ import std.io
 func main() {
     var scores = ["alice": 90, "bob": 75]
     scores["carol"] = 88
-    std::println(scores["alice"])
-    std::println(scores["bob"])
+    println(scores["alice"])
+    println(scores["bob"])
     scores["bob"] = 80
-    std::println(scores["bob"])
+    println(scores["bob"])
 }`,
   },
   {
-    title: 'Tagged Unions (slot)',
+    title: 'Tagged Unions (variant enum)',
     code: `module playground
 
 import std.io
 
-slot Shape {
+variant enum Shape {
     Circle(Int)
     Rect(Int, Int)
     Empty
@@ -711,29 +696,35 @@ func area(s: Shape): Int {
 }
 
 func main() {
-    std::println(area(Shape.Circle(5)))
-    std::println(area(Shape.Rect(4, 6)))
-    std::println(area(Shape.Empty))
+    println(area(Shape.Circle(5)))
+    println(area(Shape.Rect(4, 6)))
+    println(area(Shape.Empty))
 }`,
   },
   {
-    title: 'Generators (flow)',
+    title: 'Generators (Sequence)',
     code: `module playground
 
 import std.io
+import std.container.list
+import std.concurrency.generators
 
-flow squares(n: Int): Int {
+// Sequence<T> and Flow<T> are library types, not language constructs:
+// a producer stays an ordinary func and only its return type says which
+// kind of stream it builds.
+func squares(n: Int): Sequence<Int> = sequence<Int> [!] s: SequenceScope<Int> {
     for i in 0..<n {
-        yield i * i
+        yield(i * i)
     }
 }
 
 func main() {
+    fin produced = squares(5).items
     var sum = 0
-    for x in squares(5) {
-        sum += x
+    for i in 0..<produced.size {
+        sum = sum + produced[i]
     }
-    std::println(sum)
+    println(sum)
 }`,
   },
   {
@@ -742,17 +733,25 @@ func main() {
 
 import std.io
 
-solo Counter {
+solo pack Counter {
     var n: Int = 0
-    func inc(): Int {
+}
+
+impl Counter {
+    func !.inc(): Int {
         self.n = self.n + 1
         return self.n
     }
 }
 
+graph AppGraph {
+    solo Counter()
+}
+
 func main() {
-    std::println(inject Counter.inc())
-    std::println(inject Counter.inc())
+    var counter = inject Counter
+    println(counter.inc())
+    println(counter.inc())
 }`,
   },
   {
@@ -762,11 +761,14 @@ func main() {
 import std.io
 
 func main() {
-    var p: Int* = alloc arr@[10, 20, 30]
-    std::println(*p)
-    std::println(*(p + 1))
-    *(p + 2) = 99
-    std::println(*(p + 2))
+    // alloc yields a read-only T*; alloc^ yields a writable T^.
+    var cell: Int^ = alloc^ 10
+    println(*cell)
+
+    *cell = 99
+    println(*cell)
+
+    purge cell
 }`,
   },
   {
@@ -775,7 +777,7 @@ func main() {
 
 import std.io
 
-func sumAll<...T>(first: Int, rest: ...T): Int {
+func<...T> sumAll(first: Int, rest: ...T): Int {
     var total = first
     for x in rest {
         total = total + x
@@ -784,8 +786,8 @@ func sumAll<...T>(first: Int, rest: ...T): Int {
 }
 
 func main() {
-    std::println(sumAll(1, 2, 3))
-    std::println(sumAll(10, 20, 30, 40))
+    println(sumAll(1, 2, 3))
+    println(sumAll(10, 20, 30, 40))
 }`,
   },
 ]

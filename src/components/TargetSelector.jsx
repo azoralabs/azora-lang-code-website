@@ -1,7 +1,9 @@
 
+// The compiler has three backends: the interpreter, LLVM and WebAssembly.
+// There is no JavaScript codegen — the old 'javascript' target called an entry
+// point the wasm bundle no longer exports and failed at run time.
 export const TARGETS = [
   { id: 'interpreted', label: 'Interpreter' },
-  { id: 'javascript', label: 'JavaScript' },
   { id: 'wasm', label: 'WebAssembly' },
   { id: 'engine-wasm', label: 'Engine WASM' },
   { id: 'llvm-ir', label: 'LLVM IR' },

@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:azls": "node scripts/test-azls.mjs"
+    "test:azls": "node scripts/test-azls.mjs",
+    "test:lexer": "node scripts/test-lexer.mjs",
+    "test:examples": "node scripts/check-examples.mjs",
+    "test:examples:run": "node scripts/check-examples.mjs --run",
+    "test": "npm run test:azls && npm run test:lexer && npm run test:examples"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.0",

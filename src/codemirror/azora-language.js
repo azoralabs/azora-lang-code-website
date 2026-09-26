@@ -3,8 +3,8 @@ import { StreamLanguage } from '@codemirror/language'
 const keywords = new Set([
   'var', 'let', 'fin', 'func', 'return', 'package', 'module', 'if', 'else',
   'inline', 'deepinline', 'noinline', 'zone', 'friend', 'test',
-  'assert', 'trace', 'mixin', 'panic', 'for', 'while', 'loop', 'in', 'by', 'reverse', 'break',
-  'continue', 'shield', 'pack', 'enum', 'slot', 'when', 'throw', 'try', 'catch', 'rescue',
+  'assert', 'trace', 'mixin', 'panic', 'for', 'while', 'loop', 'in', 'by', 'break',
+  'continue', 'pack', 'enum', 'slot', 'when', 'throw', 'try', 'catch', 'rescue',
   'impl', 'spec', 'self', 'as', 'guard', 'is', 'null', 'use', 'typealias',
   'defer', 'node', 'leaf', 'repl', 'virt', 'base', 'fail',
   'flow', 'yield', 'task', 'await', 'launch',
@@ -12,7 +12,7 @@ const keywords = new Set([
   'solo', 'inject', 'wrap', 'deco',
   'mem', 'rem', 'ret', 'effect', 'view', 'hook', 'prop', 'ctor', 'dtor', 'flip', 'flop',
   'oper', 'infx', 'threadlocal',
-  'expose', 'confine', 'protect', 'protected', 'shield', 'ref', 'out', 'mut', 'shared', 'weak',
+  'expose', 'confine', 'protect', 'protected', 'ref', 'out', 'mut', 'shared', 'weak',
 ])
 
 const types = new Set([
@@ -164,7 +164,7 @@ function createAzoraStreamParser(names) {
       // Parse code tokens inside interpolation
       if (stream.eatSpace()) return null
       if (stream.match(/\b\d[\d_]*(?:\.[\d_]+)?\b/)) return 'number'
-      if (stream.match(/[+\-*/%]=?|&&|\|\||[<>!=]=?/)) return 'operator'
+      if (stream.match(/<=>|<>|>\.\.|[+\-*/%]=?|&&|\|\||[<>!=]=?/)) return 'operator'
       if (stream.match(/[(),.:]/)) return 'punctuation'
       if (stream.match(/[a-zA-Z_]\w*/)) {
         const word = stream.current()
@@ -217,7 +217,7 @@ function createAzoraStreamParser(names) {
     }
 
     // Operators
-    if (stream.match(/\.\.\.?|->|::|&&|\|\||[<>!=]=?|[+\-*/%]=?|\?\??/)) {
+    if (stream.match(/<=>|<>|>\.\.|\.\.\.|\.\.<|\.\.|->|::|&&|\|\||[<>!=]=?|[+\-*/%]=?|\?\??/)) {
       return 'operator'
     }
 

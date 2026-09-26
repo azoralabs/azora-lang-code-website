@@ -22,121 +22,121 @@ module engine.input
  */
 
 // Keyboard codes. Printable keys retain their uppercase ASCII values.
-fin KEY_BACKSPACE = 8
-fin KEY_TAB = 9
-fin KEY_ENTER = 13
-fin KEY_ESCAPE = 27
-fin KEY_SPACE = 32
-fin KEY_0 = 48
-fin KEY_1 = 49
-fin KEY_2 = 50
-fin KEY_3 = 51
-fin KEY_4 = 52
-fin KEY_5 = 53
-fin KEY_6 = 54
-fin KEY_7 = 55
-fin KEY_8 = 56
-fin KEY_9 = 57
-fin KEY_A = 65
-fin KEY_B = 66
-fin KEY_C = 67
-fin KEY_D = 68
-fin KEY_E = 69
-fin KEY_F = 70
-fin KEY_G = 71
-fin KEY_H = 72
-fin KEY_I = 73
-fin KEY_J = 74
-fin KEY_K = 75
-fin KEY_L = 76
-fin KEY_M = 77
-fin KEY_N = 78
-fin KEY_O = 79
-fin KEY_P = 80
-fin KEY_Q = 81
-fin KEY_R = 82
-fin KEY_S = 83
-fin KEY_T = 84
-fin KEY_U = 85
-fin KEY_V = 86
-fin KEY_W = 87
-fin KEY_X = 88
-fin KEY_Y = 89
-fin KEY_Z = 90
+fin keyBackspace = 8
+fin keyTab = 9
+fin keyEnter = 13
+fin keyEscape = 27
+fin keySpace = 32
+fin key0 = 48
+fin key1 = 49
+fin key2 = 50
+fin key3 = 51
+fin key4 = 52
+fin key5 = 53
+fin key6 = 54
+fin key7 = 55
+fin key8 = 56
+fin key9 = 57
+fin keyA = 65
+fin keyB = 66
+fin keyC = 67
+fin keyD = 68
+fin keyE = 69
+fin keyF = 70
+fin keyG = 71
+fin keyH = 72
+fin keyI = 73
+fin keyJ = 74
+fin keyK = 75
+fin keyL = 76
+fin keyM = 77
+fin keyN = 78
+fin keyO = 79
+fin keyP = 80
+fin keyQ = 81
+fin keyR = 82
+fin keyS = 83
+fin keyT = 84
+fin keyU = 85
+fin keyV = 86
+fin keyW = 87
+fin keyX = 88
+fin keyY = 89
+fin keyZ = 90
 
-fin KEY_LEFT = 1001
-fin KEY_RIGHT = 1002
-fin KEY_UP = 1003
-fin KEY_DOWN = 1004
-fin KEY_SHIFT = 1005
-fin KEY_CONTROL = 1006
-fin KEY_ALT = 1007
-fin KEY_META = 1008
-fin KEY_CAPS_LOCK = 1009
-fin KEY_INSERT = 1010
-fin KEY_DELETE = 1011
-fin KEY_HOME = 1012
-fin KEY_END = 1013
-fin KEY_PAGE_UP = 1014
-fin KEY_PAGE_DOWN = 1015
-fin KEY_F1 = 1021
-fin KEY_F2 = 1022
-fin KEY_F3 = 1023
-fin KEY_F4 = 1024
-fin KEY_F5 = 1025
-fin KEY_F6 = 1026
-fin KEY_F7 = 1027
-fin KEY_F8 = 1028
-fin KEY_F9 = 1029
-fin KEY_F10 = 1030
-fin KEY_F11 = 1031
-fin KEY_F12 = 1032
+fin keyLeft = 1001
+fin keyRight = 1002
+fin keyUp = 1003
+fin keyDown = 1004
+fin keyShift = 1005
+fin keyControl = 1006
+fin keyAlt = 1007
+fin keyMeta = 1008
+fin keyCapsLock = 1009
+fin keyInsert = 1010
+fin keyDelete = 1011
+fin keyHome = 1012
+fin keyEnd = 1013
+fin keyPageUp = 1014
+fin keyPageDown = 1015
+fin keyF1 = 1021
+fin keyF2 = 1022
+fin keyF3 = 1023
+fin keyF4 = 1024
+fin keyF5 = 1025
+fin keyF6 = 1026
+fin keyF7 = 1027
+fin keyF8 = 1028
+fin keyF9 = 1029
+fin keyF10 = 1030
+fin keyF11 = 1031
+fin keyF12 = 1032
 
-fin MOUSE_LEFT = 0
-fin MOUSE_RIGHT = 1
-fin MOUSE_MIDDLE = 2
-fin MOUSE_BACK = 3
-fin MOUSE_FORWARD = 4
+fin mouseLeft = 0
+fin mouseRight = 1
+fin mouseMiddle = 2
+fin mouseBack = 3
+fin mouseForward = 4
 
-fin POINTER_MOUSE = 0
-fin POINTER_TOUCH = 1
-fin POINTER_PEN = 2
-fin POINTER_NONE = -1
+fin pointerMouse = 0
+fin pointerTouch = 1
+fin pointerPen = 2
+fin pointerNone = -1
 
-fin TOUCH_NONE = 0
-fin TOUCH_BEGAN = 1
-fin TOUCH_MOVED = 2
-fin TOUCH_STATIONARY = 3
-fin TOUCH_ENDED = 4
-fin TOUCH_CANCELLED = 5
+fin touchNone = 0
+fin touchBegan = 1
+fin touchMoved = 2
+fin touchStationary = 3
+fin touchEnded = 4
+fin touchCancelled = 5
 
 // W3C standard gamepad layout.
-fin GAMEPAD_SOUTH = 0
-fin GAMEPAD_EAST = 1
-fin GAMEPAD_WEST = 2
-fin GAMEPAD_NORTH = 3
-fin GAMEPAD_LEFT_BUMPER = 4
-fin GAMEPAD_RIGHT_BUMPER = 5
-fin GAMEPAD_LEFT_TRIGGER = 6
-fin GAMEPAD_RIGHT_TRIGGER = 7
-fin GAMEPAD_BACK = 8
-fin GAMEPAD_START = 9
-fin GAMEPAD_LEFT_STICK = 10
-fin GAMEPAD_RIGHT_STICK = 11
-fin GAMEPAD_DPAD_UP = 12
-fin GAMEPAD_DPAD_DOWN = 13
-fin GAMEPAD_DPAD_LEFT = 14
-fin GAMEPAD_DPAD_RIGHT = 15
-fin GAMEPAD_HOME = 16
+fin gamepadSouth = 0
+fin gamepadEast = 1
+fin gamepadWest = 2
+fin gamepadNorth = 3
+fin gamepadLeftBumper = 4
+fin gamepadRightBumper = 5
+fin gamepadLeftTrigger = 6
+fin gamepadRightTrigger = 7
+fin gamepadBack = 8
+fin gamepadStart = 9
+fin gamepadLeftStick = 10
+fin gamepadRightStick = 11
+fin gamepadDpadUp = 12
+fin gamepadDpadDown = 13
+fin gamepadDpadLeft = 14
+fin gamepadDpadRight = 15
+fin gamepadHome = 16
 
-fin GAMEPAD_LEFT_X = 0
-fin GAMEPAD_LEFT_Y = 1
-fin GAMEPAD_RIGHT_X = 2
-fin GAMEPAD_RIGHT_Y = 3
+fin gamepadLeftX = 0
+fin gamepadLeftY = 1
+fin gamepadRightX = 2
+fin gamepadRightY = 3
 
-friend zone engine::input {
+scope engine::input {
     /* Internal WebAssembly device ABI; applications use the wrappers below. */
-    bridge WebAssembly {
+    bridge .WebAssembly {
         func engineInputKeyDown(key: Int): Bool
         func engineInputKeyPressed(key: Int): Bool
         func engineInputKeyReleased(key: Int): Bool
@@ -144,12 +144,12 @@ friend zone engine::input {
         func engineInputTextCount(): Int
         func engineInputTextCodePoint(index: Int): Int
 
-        func engineInputMouseX(): Real
-        func engineInputMouseY(): Real
-        func engineInputMouseDeltaX(): Real
-        func engineInputMouseDeltaY(): Real
-        func engineInputMouseWheelX(): Real
-        func engineInputMouseWheelY(): Real
+        func engineInputMouseX(): Float
+        func engineInputMouseY(): Float
+        func engineInputMouseDeltaX(): Float
+        func engineInputMouseDeltaY(): Float
+        func engineInputMouseWheelX(): Float
+        func engineInputMouseWheelY(): Float
         func engineInputMouseDown(button: Int): Bool
         func engineInputMousePressed(button: Int): Bool
         func engineInputMouseReleased(button: Int): Bool
@@ -160,24 +160,24 @@ friend zone engine::input {
 
         func engineInputPointerKind(): Int
         func engineInputPointerId(): Int
-        func engineInputPointerX(): Real
-        func engineInputPointerY(): Real
-        func engineInputPointerDeltaX(): Real
-        func engineInputPointerDeltaY(): Real
-        func engineInputPointerPressure(): Real
+        func engineInputPointerX(): Float
+        func engineInputPointerY(): Float
+        func engineInputPointerDeltaX(): Float
+        func engineInputPointerDeltaY(): Float
+        func engineInputPointerPressure(): Float
         func engineInputPointerDown(): Bool
         func engineInputPointerPressed(): Bool
         func engineInputPointerReleased(): Bool
 
         func engineInputTouchCount(): Int
         func engineInputTouchId(index: Int): Int
-        func engineInputTouchX(index: Int): Real
-        func engineInputTouchY(index: Int): Real
-        func engineInputTouchDeltaX(index: Int): Real
-        func engineInputTouchDeltaY(index: Int): Real
-        func engineInputTouchPressure(index: Int): Real
-        func engineInputTouchRadiusX(index: Int): Real
-        func engineInputTouchRadiusY(index: Int): Real
+        func engineInputTouchX(index: Int): Float
+        func engineInputTouchY(index: Int): Float
+        func engineInputTouchDeltaX(index: Int): Float
+        func engineInputTouchDeltaY(index: Int): Float
+        func engineInputTouchPressure(index: Int): Float
+        func engineInputTouchRadiusX(index: Int): Float
+        func engineInputTouchRadiusY(index: Int): Float
         func engineInputTouchPhase(index: Int): Int
 
         func engineInputControllerCount(): Int
@@ -185,9 +185,9 @@ friend zone engine::input {
         func engineInputControllerButtonDown(index: Int, button: Int): Bool
         func engineInputControllerButtonPressed(index: Int, button: Int): Bool
         func engineInputControllerButtonReleased(index: Int, button: Int): Bool
-        func engineInputControllerButtonValue(index: Int, button: Int): Real
-        func engineInputControllerAxis(index: Int, axis: Int): Real
-        func engineInputControllerRumble(index: Int, low: Real, high: Real, durationMs: Int): Bool
+        func engineInputControllerButtonValue(index: Int, button: Int): Float
+        func engineInputControllerAxis(index: Int, axis: Int): Float
+        func engineInputControllerRumble(index: Int, low: Float, high: Float, durationMs: Int): Bool
     }
 
     /** True while [key] is held. */
@@ -209,16 +209,16 @@ friend zone engine::input {
     func textCodePoint(index: Int): Int { return engineInputTextCodePoint(index) }
 
     /** Mouse position in logical pixels, origin at the top-left. */
-    func mouseX(): Real { return engineInputMouseX() }
-    func mouseY(): Real { return engineInputMouseY() }
+    func mouseX(): Float { return engineInputMouseX() }
+    func mouseY(): Float { return engineInputMouseY() }
 
     /** Mouse movement accumulated since the previous engine frame. */
-    func mouseDeltaX(): Real { return engineInputMouseDeltaX() }
-    func mouseDeltaY(): Real { return engineInputMouseDeltaY() }
+    func mouseDeltaX(): Float { return engineInputMouseDeltaX() }
+    func mouseDeltaY(): Float { return engineInputMouseDeltaY() }
 
     /** Horizontal and vertical wheel movement for this frame. */
-    func mouseWheelX(): Real { return engineInputMouseWheelX() }
-    func mouseWheelY(): Real { return engineInputMouseWheelY() }
+    func mouseWheelX(): Float { return engineInputMouseWheelX() }
+    func mouseWheelY(): Float { return engineInputMouseWheelY() }
 
     func mouseDown(button: Int): Bool { return engineInputMouseDown(button) }
     func mousePressed(button: Int): Bool { return engineInputMousePressed(button) }
@@ -232,14 +232,14 @@ friend zone engine::input {
     func requestPointerLock(): Bool { return engineInputRequestPointerLock() }
     func releasePointerLock() { engineInputReleasePointerLock() }
 
-    /** Kind of the active unified pointer: POINTER_MOUSE/TOUCH/PEN/NONE. */
+    /** Kind of the active unified pointer: pointerMouse/TOUCH/PEN/NONE. */
     func pointerKind(): Int { return engineInputPointerKind() }
     func pointerId(): Int { return engineInputPointerId() }
-    func pointerX(): Real { return engineInputPointerX() }
-    func pointerY(): Real { return engineInputPointerY() }
-    func pointerDeltaX(): Real { return engineInputPointerDeltaX() }
-    func pointerDeltaY(): Real { return engineInputPointerDeltaY() }
-    func pointerPressure(): Real { return engineInputPointerPressure() }
+    func pointerX(): Float { return engineInputPointerX() }
+    func pointerY(): Float { return engineInputPointerY() }
+    func pointerDeltaX(): Float { return engineInputPointerDeltaX() }
+    func pointerDeltaY(): Float { return engineInputPointerDeltaY() }
+    func pointerPressure(): Float { return engineInputPointerPressure() }
     func pointerDown(): Bool { return engineInputPointerDown() }
     func pointerPressed(): Bool { return engineInputPointerPressed() }
     func pointerReleased(): Bool { return engineInputPointerReleased() }
@@ -247,13 +247,13 @@ friend zone engine::input {
     /** Active touch points, ordered by stable pointer id. */
     func touchCount(): Int { return engineInputTouchCount() }
     func touchId(index: Int): Int { return engineInputTouchId(index) }
-    func touchX(index: Int): Real { return engineInputTouchX(index) }
-    func touchY(index: Int): Real { return engineInputTouchY(index) }
-    func touchDeltaX(index: Int): Real { return engineInputTouchDeltaX(index) }
-    func touchDeltaY(index: Int): Real { return engineInputTouchDeltaY(index) }
-    func touchPressure(index: Int): Real { return engineInputTouchPressure(index) }
-    func touchRadiusX(index: Int): Real { return engineInputTouchRadiusX(index) }
-    func touchRadiusY(index: Int): Real { return engineInputTouchRadiusY(index) }
+    func touchX(index: Int): Float { return engineInputTouchX(index) }
+    func touchY(index: Int): Float { return engineInputTouchY(index) }
+    func touchDeltaX(index: Int): Float { return engineInputTouchDeltaX(index) }
+    func touchDeltaY(index: Int): Float { return engineInputTouchDeltaY(index) }
+    func touchPressure(index: Int): Float { return engineInputTouchPressure(index) }
+    func touchRadiusX(index: Int): Float { return engineInputTouchRadiusX(index) }
+    func touchRadiusY(index: Int): Float { return engineInputTouchRadiusY(index) }
     func touchPhase(index: Int): Int { return engineInputTouchPhase(index) }
 
     /** Number of connected standard-mapped controllers. */
@@ -262,11 +262,11 @@ friend zone engine::input {
     func controllerButtonDown(index: Int, button: Int): Bool { return engineInputControllerButtonDown(index, button) }
     func controllerButtonPressed(index: Int, button: Int): Bool { return engineInputControllerButtonPressed(index, button) }
     func controllerButtonReleased(index: Int, button: Int): Bool { return engineInputControllerButtonReleased(index, button) }
-    func controllerButtonValue(index: Int, button: Int): Real { return engineInputControllerButtonValue(index, button) }
-    func controllerAxis(index: Int, axis: Int): Real { return engineInputControllerAxis(index, axis) }
+    func controllerButtonValue(index: Int, button: Int): Float { return engineInputControllerButtonValue(index, button) }
+    func controllerAxis(index: Int, axis: Int): Float { return engineInputControllerAxis(index, axis) }
 
     /** Starts dual-rumble feedback when supported by the selected controller. */
-    func controllerRumble(index: Int, low: Real, high: Real, durationMs: Int = 180): Bool {
+    func controllerRumble(index: Int, low: Float, high: Float, durationMs: Int = 180): Bool {
         return engineInputControllerRumble(index, low, high, durationMs)
     }
 }
