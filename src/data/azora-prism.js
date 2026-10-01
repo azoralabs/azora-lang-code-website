@@ -1,14 +1,14 @@
 /** Azora language definition for Prism / refractor */
 export default function azora(Prism) {
   const codeTokens = {
-    keyword: /\b(?:var|let|fin|func|return|package|module|use|if|else|inline|deepinline|noinline|zone|friend|test|assert|trace|mixin|panic|for|while|loop|in|by|break|continue|pack|enum|slot|when|throw|try|catch|impl|spec|defer|typealias|type|as|guard|is|null|oper|infx|fail|alloc|drop|deref|unsafe|isolated|flow|yield|task|async|await|launch|bridge|solo|inject|wrap|rescue|node|leaf|repl|virt|base|mem|rem|ret|effect|view|hook|prop|ctor|dtor|flip|flop|ref|out|mut|shared|weak|expose|confine|protect|protected|threadlocal|deco|where|with|each)\b/,
+    keyword: /\b(?:__float|__int|__uint|alloc|annot|as|assert|assoc|async|await|bind|binds|break|bridge|by|catch|confined|continue|ctor|deepinline|defer|delay|derive|derives|direct|dtor|effect|else|enum|error|escaping|exposed|factory|false|fin|for|func|graph|if|impl|import|in|includes|inject|inline|is|lazy|lend|let|literal|loop|macro|module|noinline|null|oper|out|pack|panic|preserve|prop|protected|purge|react|remember|requires|rescue|retain|return|scope|scoped|seal|solo|spec|take|test|then|threadlocal|throw|trace|true|try|typealias|union|unsafe|using|val|var|variant|when|where|while|with|without)\b/,
     parameter: /\b(?:self|it)\b/,
     'type-keyword': {
-      pattern: /\b(?:Int|Real|Bool|String|Unit|Type|ReturnType|Byte|Short|Long|UInt|ULong|UByte|UShort|Float|Decimal|Char|Size|USize|Cent|UCent|Nothing|Any)\b/,
+      pattern: /\b(?:Int|Double|Bool|String|Unit|Type|ReturnType|Byte|Short|Long|UInt|ULong|UByte|UShort|Float|Quad|Char|Size|USize|Cent|UCent|Nothing|Any)\b/,
       alias: 'class-name',
     },
     'builtin-fn': {
-      pattern: /\b(?:print|println|delay|hasDeco|getDeco|decoTargets|platform|toString|toInt|toReal|toChar|stringLength|charAt|ord|chr|promote)\b/,
+      pattern: /\b(?:print|println|delay|hasAnnot|annotMeta|platform|toString|toInt|toReal|toChar|stringLength|charAt|ord|chr|promote)\b/,
       alias: 'builtin',
     },
     boolean: /\b(?:true|false)\b/,
@@ -53,7 +53,7 @@ export default function azora(Prism) {
       alias: 'annotation',
     },
     macro: {
-      pattern: /\b[a-z_]\w*@/,
+      pattern: /@[a-z_]\w*[!?&*^]?/,
       alias: 'variable',
     },
     preprocessor: {

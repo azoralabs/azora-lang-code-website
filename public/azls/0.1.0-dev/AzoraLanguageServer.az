@@ -20,7 +20,7 @@ typealias Char = Char
  * versioned workspace corpus supplied by the browser.
  */
 
-func azlsVersion(): String { return "0.1-dev" }
+func azlsVersion(): String { return "0.1.0-dev" }
 
 /** Allocates an ABI-compatible UTF-8 input buffer for the browser host. */
 func azlsReserve(size: Int): String { return " " * size }

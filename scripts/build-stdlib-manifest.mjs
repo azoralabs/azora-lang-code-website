@@ -4,10 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(scriptDirectory, '..')
-const packageMetadata = JSON.parse(
-  await readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
-)
-const version = process.argv[2] || packageMetadata.version
+const { getDefaultVersion } = await import('../src/engine/versions.js')
+const version = process.argv[2] || getDefaultVersion()
 const stdlibRoot = path.resolve(repositoryRoot, '../azora-lang/std')
 const engineRoot = path.resolve(repositoryRoot, `src/engine/libraries/${version}`)
 const outputFile = path.resolve(

@@ -541,7 +541,7 @@ export async function runEngineWasm({ wat, container, onMessage }) {
     const binary = await compileWat(wat)
     const { instance } = await WebAssembly.instantiate(binary, session.createImports())
     session.attach(instance)
-    if (typeof instance.exports.main !== 'function') throw new Error("Engine programs must export 'task main()'")
+    if (typeof instance.exports.main !== 'function') throw new Error("Engine programs must export 'async func main()'")
     session.startMain()
     await Promise.race([
       session.surfaceReady,

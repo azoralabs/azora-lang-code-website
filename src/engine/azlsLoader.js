@@ -57,7 +57,7 @@ function resolveRange(documents, activeSource, documentIds, response) {
 
 function moduleMetadata(document, id) {
   const declaration = document.source.match(
-    /^\s*(export\s+)?module\s+([A-Za-z_][A-Za-z0-9_.]*)/m,
+    /^\s*(exposed\s+)?module\s+([A-Za-z_][A-Za-z0-9_.]*)/m,
   )
   return Object.freeze({
     ...document,

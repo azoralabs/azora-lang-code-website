@@ -25,3 +25,16 @@ for (const operator of ['<>', '<=>', '>..']) {
   assert.equal(prism.languages.azora.operator.exec(operator)?.[0], operator)
 }
 console.log('CodeMirror and Prism exchange, comparison, range and interpolation checks passed')
+
+// New syntax must be styled as syntax; retired spellings are ordinary names.
+for (const word of ['async', 'scope', 'variant', 'annot', 'purge', 'remember', 'retain', 'preserve', 'exposed', 'confined', 'val']) {
+  const stream = new StringStream(word, 4)
+  assert.equal(parser.token(stream, parser.startState()), 'keyword', word)
+  assert.equal(prism.languages.azora.keyword.exec(word)?.[0], word)
+}
+for (const word of ['task', 'zone', 'deco', 'drop', 'mem', 'rem', 'ret', 'ref']) {
+  const stream = new StringStream(word, 4)
+  assert.notEqual(parser.token(stream, parser.startState()), 'keyword', word)
+  assert.equal(prism.languages.azora.keyword.test(word), false, word)
+}
+console.log('Current and retired Azora vocabulary checks passed')

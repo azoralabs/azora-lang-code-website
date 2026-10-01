@@ -14,6 +14,10 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    # Only this repository may deploy to code.azoralang.org. A copy of this
+    # workflow in another repository (for example a site started from this
+    # one) skips the job instead of overwriting the production site.
+    if: github.repository == 'azoralabs/azora-lang-code-website'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -38,19 +42,19 @@ jobs:
 
       - name: Validate deployment key
         env:
-          AZORA_SSH_PRIVATE_KEY: ${{ secrets.AZORA_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         run: |
-          test -n "${AZORA_SSH_PRIVATE_KEY}" || {
-            echo "::error::Missing required production secret AZORA_SSH_PRIVATE_KEY"
+          test -n "${DEPLOY_SSH_PRIVATE_KEY}" || {
+            echo "::error::Missing required production secret DEPLOY_SSH_PRIVATE_KEY"
             exit 1
           }
 
       - name: Set up SSH
         env:
-          AZORA_SSH_PRIVATE_KEY: ${{ secrets.AZORA_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         run: |
           install -d -m 700 ~/.ssh
-          printf '%s\n' "${AZORA_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/azora_deploy
+          printf '%s\n' "${DEPLOY_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/azora_deploy
           chmod 600 ~/.ssh/azora_deploy
           ssh-keygen -y -f ~/.ssh/azora_deploy > /dev/null
           printf '%s\n' \
@@ -58,11 +62,13 @@ jobs:
             > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      # On the server this key can only run rrsync rooted at
+      # /var/www/code.azoralang.org, so "html/" means /var/www/code.azoralang.org/html.
       - name: Deploy to Azora VPS
         run: >
           rsync -rlptDz --delete --exclude='.htaccess'
           -e "ssh -i ~/.ssh/azora_deploy -o IdentitiesOnly=yes"
-          dist/ azora-deploy@152.239.116.142:/var/www/code.azoralang.org/html/
+          dist/ azora-deploy@152.239.116.142:html/
 
       - name: Remove SSH key
         if: always()

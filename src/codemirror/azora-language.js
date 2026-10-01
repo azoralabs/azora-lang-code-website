@@ -1,23 +1,11 @@
+import { AZORA_RESERVED_KEYWORDS } from '../data/azora-vocabulary.js'
 import { StreamLanguage } from '@codemirror/language'
 
-const keywords = new Set([
-  'var', 'let', 'fin', 'func', 'return', 'package', 'module', 'if', 'else',
-  'inline', 'deepinline', 'noinline', 'zone', 'friend', 'test',
-  'assert', 'trace', 'mixin', 'panic', 'for', 'while', 'loop', 'in', 'by', 'break',
-  'continue', 'pack', 'enum', 'slot', 'when', 'throw', 'try', 'catch', 'rescue',
-  'impl', 'spec', 'self', 'as', 'guard', 'is', 'null', 'use', 'typealias',
-  'defer', 'node', 'leaf', 'repl', 'virt', 'base', 'fail',
-  'flow', 'yield', 'task', 'await', 'launch',
-  'alloc', 'drop', 'deref', 'unsafe', 'isolated', 'bridge',
-  'solo', 'inject', 'wrap', 'deco',
-  'mem', 'rem', 'ret', 'effect', 'view', 'hook', 'prop', 'ctor', 'dtor', 'flip', 'flop',
-  'oper', 'infx', 'threadlocal',
-  'expose', 'confine', 'protect', 'protected', 'ref', 'out', 'mut', 'shared', 'weak',
-])
+const keywords = new Set(AZORA_RESERVED_KEYWORDS)
 
 const types = new Set([
   'Int', 'UInt', 'Long', 'ULong', 'Byte', 'UByte', 'Short', 'UShort',
-  'Cent', 'UCent', 'Float', 'Real', 'Decimal', 'Bool', 'Char', 'String',
+  'Cent', 'UCent', 'Float', 'Double', 'Quad', 'Bool', 'Char', 'String',
   'Unit', 'Any',
 ])
 
@@ -68,7 +56,7 @@ function semanticNames(source, resolvedReferences) {
   for (const match of declarations.matchAll(/\b(?:func|task|flow|hook)\s+([A-Za-z_]\w*)/g)) {
     functions.add(match[1])
   }
-  for (const match of declarations.matchAll(/\b(?:var|fin|let)\s+([A-Za-z_]\w*)/g)) {
+  for (const match of declarations.matchAll(/\b(?:var|val|fin|let)\s+([A-Za-z_]\w*)/g)) {
     variables.add(match[1])
   }
   for (const match of declarations.matchAll(/\b(?:pack|enum|spec|solo|node|slot)\s+([A-Za-z_]\w*)/g)) {
@@ -260,7 +248,7 @@ function createAzoraStreamParser(names) {
           state.afterFuncKeyword = true
           state.paramNames = new Set()
         }
-        if (word === 'fin' || word === 'var') {
+        if (['fin', 'var', 'val', 'let'].includes(word)) {
           state.afterVarKeyword = true
         }
         return 'keyword'
