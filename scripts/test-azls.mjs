@@ -121,6 +121,21 @@ for (const contextual of ['package', 'view', 'ref', 'mut', 'shared', 'weak', 'se
   )
 }
 
+// Declaration and purge lists use parentheses; a single derived spec is bare.
+const derivesSource = [
+  'import std.traits',
+  'pack Point derives Equal { fin x: Int }',
+  'pack Text derives (Copy, Clone, Equal, Hash) { fin value: Int }',
+  'func release(x: Int*, y: Int*, z: Int*) { purge (x, y, z) }',
+].join('\n')
+const derivesHighlights = await invokeJson('azlsHighlight', [derivesSource, corpus])
+assert.deepEqual(
+  derivesHighlights
+    .filter((span) => ['derives', 'purge'].includes(derivesSource.slice(span.start, span.end)))
+    .map((span) => [derivesSource.slice(span.start, span.end), span.type]),
+  [['derives', 'keyword'], ['derives', 'keyword'], ['purge', 'keyword']],
+)
+
 // `where` was contextual once; it is a reserved keyword now, so it is a
 // keyword wherever it appears and cannot be used as an identifier.
 const whereSource = [
