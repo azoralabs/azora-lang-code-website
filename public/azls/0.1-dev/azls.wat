@@ -3192,7 +3192,7 @@
       ))
     unreachable
   )
-  (data (i32.const 1024) "\09\00\00\000.1.0-dev")
+  (data (i32.const 1024) "\07\00\00\000.1-dev")
   (data (i32.const 1040) "\01\00\00\00 ")
   (data (i32.const 1048) "\0e\00\00\00<:AZLS-FIELD:>")
   (data (i32.const 1068) "\0f\00\00\00<:AZLS-RECORD:>")

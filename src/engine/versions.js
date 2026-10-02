@@ -1,5 +1,5 @@
 export const VERSIONS = [
-  { id: '0.1.0-dev', label: '0.1.0-dev', isDefault: true },
+  { id: '0.1-dev', label: '0.1-dev', isDefault: true },
 ]
 
 export function getDefaultVersion() {
