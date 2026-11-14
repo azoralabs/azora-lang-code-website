@@ -55,16 +55,19 @@ export async function loadWasmEngine(version) {
       return safeJsonAsync(() => callWithLibraries('azInterpret', 'azInterpretWithLibraries', source, library))
     },
 
-    generateJavaScript(source, library = null) {
-      return safeJson(() => callWithLibraries('azGenerateJavaScript', 'azGenerateJavaScriptWithLibraries', source, library))
-    },
-
     generateLlvmIr(source, library = null) {
       return safeJson(() => callWithLibraries('azGenerateLlvmIr', 'azGenerateLlvmIrWithLibraries', source, library))
     },
 
     generateWasm(source, library = null) {
       return safeJson(() => callWithLibraries('azGenerateWasm', 'azGenerateWasmWithLibraries', source, library))
+    },
+
+    // The WebAssembly module itself: `output` is its text, `binary` the
+    // module (base64) and `host` the JavaScript the compiler generated to
+    // supply its imports.
+    compileWasm(source, library = null) {
+      return safeJson(() => callWithLibraries('azCompileWasm', 'azCompileWasmWithLibraries', source, library))
     },
 
     async runTests(source, library = null) {

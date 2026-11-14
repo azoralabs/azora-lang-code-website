@@ -1,7 +1,7 @@
 
-// The compiler has three backends: the interpreter, LLVM and WebAssembly.
-// There is no JavaScript codegen — the old 'javascript' target called an entry
-// point the wasm bundle no longer exports and failed at run time.
+// The compiler has three backends: the interpreter, LLVM and WebAssembly. The
+// WebAssembly targets run here, in the browser, as modules the compiler
+// assembled with the host it generated.
 export const TARGETS = [
   { id: 'interpreted', label: 'Interpreter' },
   { id: 'wasm', label: 'WebAssembly' },

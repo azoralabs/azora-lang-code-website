@@ -6,13 +6,11 @@ import EngineOutput from './EngineOutput.jsx'
 const ALL_TABS = [
   { id: 'console', label: 'Output' },
   { id: 'preprocessed', label: 'Azora IR' },
-  { id: 'javascript', label: 'JavaScript' },
   { id: 'wasm', label: 'WebAssembly' },
   { id: 'llvm-ir', label: 'LLVM IR' },
 ]
 
 const TARGET_CODE = {
-  javascript: { tab: 'javascript', key: 'javascript', language: 'javascript' },
   wasm: { tab: 'wasm', key: 'wasm', language: 'wasm' },
   'engine-wasm': { tab: 'wasm', key: 'wasm', language: 'wasm' },
   'llvm-ir': { tab: 'llvm-ir', key: 'llvmIr', language: 'llvm' },

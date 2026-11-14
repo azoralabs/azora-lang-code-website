@@ -117,7 +117,7 @@ func isKeywordRange(source: String, start: Int, end: Int): Bool {
         rangeIs(source, start, end, "effect") || rangeIs(source, start, end, "with") ||
         rangeIs(source, start, end, "without") ||
         rangeIs(source, start, end, "prop") || rangeIs(source, start, end, "ctor") ||
-        rangeIs(source, start, end, "dtor") || rangeIs(source, start, end, "literal") ||
+        rangeIs(source, start, end, "dtor") ||
         rangeIs(source, start, end, "out") ||
         rangeIs(source, start, end, "exposed") || rangeIs(source, start, end, "protected") ||
         rangeIs(source, start, end, "confined") ||

@@ -7,7 +7,7 @@ import useAzoraLanguageServer from './hooks/useAzoraLanguageServer.js'
 import useEngineWasm from './hooks/useEngineWasm.js'
 import { SAMPLE_CODE } from './data/sampleCode.js'
 import { getDefaultVersion, isValidVersion } from './engine/versions.js'
-import { runJavaScript } from './engine/javascriptRunner.js'
+import { runWasm } from './engine/wasmRunner.js'
 import { runLlvmIr } from './engine/llvmRunner.js'
 import { errorMessage } from './engine/errorMessage.js'
 import { parseCompilerDiagnostics } from './engine/compilerDiagnostics.js'
@@ -17,7 +17,7 @@ const LEGACY_LS_CODE_KEY = 'azora-playground-code'
 const LS_VERSION_KEY = 'azora-playground-version'
 const LS_TARGET_KEY = 'azora-playground-target'
 const ACTIVE_TARGETS = new Set(['interpreted', 'wasm', 'engine-wasm', 'llvm-ir'])
-const EMPTY_RESULTS = { console: [], preprocessed: '', javascript: '', llvmIr: '', wasm: '' }
+const EMPTY_RESULTS = { console: [], preprocessed: '', llvmIr: '', wasm: '' }
 const PLAYGROUND_URI = 'azora-playground:///main.az'
 
 function loadSaved(key, fallback) {
@@ -84,7 +84,6 @@ export default function App() {
     }
     try { localStorage.setItem(LS_TARGET_KEY, safeTarget) } catch {}
     setResults(prev => ({ ...prev, console: [] }))
-    if (safeTarget !== 'javascript' && activeTab === 'javascript') setActiveTab('console')
     if (safeTarget !== 'llvm-ir' && activeTab === 'llvm-ir') setActiveTab('console')
     if (safeTarget !== 'wasm' && safeTarget !== 'engine-wasm' && activeTab === 'wasm') setActiveTab('console')
   }, [target, activeTab])
@@ -120,17 +119,6 @@ export default function App() {
       setCompilerDiagnostics(parseCompilerDiagnostics(errorMessage(error), code))
     }
   }, [code, engine.ready, engine, activeLibrary, needsEngineLibrary])
-
-  useEffect(() => {
-    if (!engine.ready || target !== 'javascript') return
-    try {
-      const jsResult = engine.generateJavaScript(code, activeLibrary)
-      setResults(prev => ({
-        ...prev,
-        javascript: jsResult.success ? jsResult.output : `// Error:\n// ${jsResult.errors}`,
-      }))
-    } catch {}
-  }, [code, target, engine.ready, engine, activeLibrary])
 
   useEffect(() => {
     if (!engine.ready || target !== 'llvm-ir') return
@@ -192,7 +180,7 @@ export default function App() {
         setIsGameRunning(false)
         setResults(prev => ({ ...prev, console: [] }))
 
-        const wasmResult = engine.generateWasm(code, engineWasm.assets.libraries)
+        const wasmResult = engine.compileWasm(code, engineWasm.assets.libraries)
         setCompilerDiagnostics(
           wasmResult.success ? [] : parseCompilerDiagnostics(wasmResult.errors, code),
         )
@@ -214,7 +202,7 @@ export default function App() {
         }))
         const { runEngineWasm } = await import('./engine/engineWasmRunner.js')
         const execution = await runEngineWasm({
-          wat: wasmResult.output,
+          binary: wasmResult.binary,
           container: engineViewportRef.current,
           onMessage,
         })
@@ -228,28 +216,6 @@ export default function App() {
         }
         engineSessionRef.current = execution.session
         setIsGameRunning(true)
-      } else if (target === 'javascript') {
-        const jsResult = engine.generateJavaScript(code, activeLibrary)
-        setCompilerDiagnostics(
-          jsResult.success ? [] : parseCompilerDiagnostics(jsResult.errors, code),
-        )
-        const javascriptCode = jsResult.success ? jsResult.output : null
-
-        setResults(prev => ({
-          ...prev,
-          javascript: jsResult.success ? jsResult.output : `// Error:\n// ${jsResult.errors}`,
-        }))
-
-        if (!javascriptCode) {
-          setResults(prev => ({
-            ...prev,
-            console: [{ text: `JavaScript codegen failed: ${jsResult.errors}`, type: 'error' }],
-          }))
-          return
-        }
-
-        const runResult = await runJavaScript(javascriptCode)
-        setResults(prev => ({ ...prev, console: parseOutput(runResult) }))
       } else if (target === 'llvm-ir') {
         const irResult = engine.generateLlvmIr(code, activeLibrary)
         setCompilerDiagnostics(
@@ -278,7 +244,7 @@ export default function App() {
         const runResult = await runLlvmIr(llvmIrCode)
         setResults(prev => ({ ...prev, console: parseOutput(runResult) }))
       } else if (target === 'wasm') {
-        const waResult = engine.generateWasm(code, activeLibrary)
+        const waResult = engine.compileWasm(code, activeLibrary)
         setCompilerDiagnostics(
           waResult.success ? [] : parseCompilerDiagnostics(waResult.errors, code),
         )
@@ -293,15 +259,8 @@ export default function App() {
           }))
           return
         }
-        setResults(prev => ({
-          ...prev,
-          console: [{ text: 'Showing generated WebAssembly; running program via the Azora interpreter...', type: 'output' }],
-        }))
-        const interpretResult = await engine.interpret(code, activeLibrary)
-        setCompilerDiagnostics(
-          interpretResult.success ? [] : parseCompilerDiagnostics(interpretResult.errors, code),
-        )
-        setResults(prev => ({ ...prev, console: parseOutput(interpretResult) }))
+        const runResult = await runWasm({ binary: waResult.binary, host: waResult.host })
+        setResults(prev => ({ ...prev, console: parseOutput(runResult) }))
       } else {
         const interpretResult = await engine.interpret(code, activeLibrary)
         setCompilerDiagnostics(

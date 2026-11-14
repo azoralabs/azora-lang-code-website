@@ -1,0 +1,173 @@
+/*
+ * Copyright 2026 AzoraLabs
+ *
+ * Licensed under the Apache License, Version 2.0.
+ */
+
+module engine.render
+
+import std.math
+import engine.shaders
+
+/**
+ * @file engine/render/render
+ *
+ * Universal immediate rendering API for Azora Engine 0.0.4.
+ *
+ * Applications import `engine.render` and contain only Azora code. The engine
+ * selects the device implementation for the compilation target: WebGL for
+ * WebAssembly, Metal on Apple native targets, and Vulkan on supported native
+ * targets. Device bridge functions below are an internal compiler/backend ABI;
+ * they are not an application-facing JavaScript API.
+ *
+ * A browser application exports `main`, which configures its surface, and a
+ * `frame(time: Float)` function that records one frame. Native runners use the
+ * same lifecycle, so scene and animation code stays portable.
+ *
+ * @since 0.0.4
+ */
+
+scope engine {
+    /** Rendering device selected for the current compilation target. */
+    @Experimental(since: "0.0.4")
+    enum RenderBackend {
+        Metal,
+        Vulkan,
+        WebGL
+    }
+
+    /** Dimensionality of the active rendering surface. */
+    @Experimental(since: "0.0.4")
+    enum RenderMode {
+        TwoD,
+        ThreeD
+    }
+
+    /*
+     * Internal WebAssembly device ABI. The WebGL backend implements these as
+     * typed WASM imports; public engine behavior remains in Azora below.
+     */
+    bridge .WebAssembly {
+        func engineWebOpen2d(width: Int, height: Int, vertexShader: String, fragmentShader: String): Unit
+        func engineWebOpen3d(width: Int, height: Int, vertexShader: String, fragmentShader: String): Unit
+        func engineWebNextFrame(): Float
+        func engineWebPresent(): Unit
+        func engineWebClear(r: Float, g: Float, b: Float): Unit
+        func engineWebRect(x: Float, y: Float, width: Float, height: Float, r: Float, g: Float, b: Float, a: Float): Unit
+        func engineWebCircle(x: Float, y: Float, radius: Float, r: Float, g: Float, b: Float, a: Float): Unit
+        func engineWebBoxAt(x: Float, y: Float, z: Float, width: Float, height: Float, depth: Float, rotateX: Float, rotateY: Float, rotateZ: Float, r: Float, g: Float, b: Float): Unit
+        func engineWebCylinderAt(x: Float, y: Float, z: Float, radius: Float, length: Float, rotateX: Float, rotateY: Float, rotateZ: Float, r: Float, g: Float, b: Float): Unit
+        func engineWebWheelAt(x: Float, y: Float, z: Float, radius: Float, width: Float, spin: Float, yaw: Float, steer: Float, r: Float, g: Float, b: Float): Unit
+        func engineWebCamera(distance: Float, fov: Float): Unit
+        func engineWebCameraAt(x: Float, y: Float, z: Float, targetX: Float, targetY: Float, targetZ: Float, fov: Float): Unit
+        func engineWebVehicleAudio(speed: Float, throttle: Float): Unit
+        func engineWebCrashAudio(intensity: Float): Unit
+        func engineWebLog(message: String): Unit
+    }
+
+    /** Returns the rendering backend used by a WebAssembly build. */
+    @Experimental(since: "0.0.4")
+    prop renderBackend: RenderBackend = RenderBackend.WebGL
+
+    /** Opens a resolution-independent 2D surface. Call once from `main`. */
+    @Experimental(since: "0.0.4")
+    func run2d(width: Int, height: Int) {
+        engineWebOpen2d(width, height, webgl2dVertexShaderSource(), webgl2dFragmentShaderSource())
+    }
+
+    /** Opens a hardware-accelerated 3D surface. Call once from `main`. */
+    @Experimental(since: "0.0.4")
+    func run3d(width: Int, height: Int) {
+        engineWebOpen3d(width, height, webgl3dVertexShaderSource(), webgl3dFragmentShaderSource())
+    }
+
+    /** Suspends the current task until the display is ready for another frame. */
+    @Experimental(since: "0.0.4")
+    async func nextFrame(): Float {
+        return engineWebNextFrame()
+    }
+
+    /** Submits the commands recorded since [nextFrame] to the active device. */
+    @Experimental(since: "0.0.4")
+    func present() {
+        engineWebPresent()
+    }
+
+    /** Clears the active frame with a linear RGB color. */
+    @Experimental(since: "0.0.4")
+    func clear(r: Float, g: Float, b: Float) {
+        engineWebClear(r, g, b)
+    }
+
+    /** Draws a filled rectangle in logical 2D coordinates. */
+    @Experimental(since: "0.0.4")
+    func rect(x: Float, y: Float, width: Float, height: Float, r: Float, g: Float, b: Float, a: Float = 1.0) {
+        engineWebRect(x, y, width, height, r, g, b, a)
+    }
+
+    /** Draws a filled circle in logical 2D coordinates. */
+    @Experimental(since: "0.0.4")
+    func circle(x: Float, y: Float, radius: Float, r: Float, g: Float, b: Float, a: Float = 1.0) {
+        engineWebCircle(x, y, radius, r, g, b, a)
+    }
+
+    /** Draws or updates a lit cube. Rotation angles are radians. */
+    @Experimental(since: "0.0.4")
+    func cube(size: Float, rotateX: Float, rotateY: Float, rotateZ: Float, r: Float, g: Float, b: Float) {
+        engineWebBoxAt(0.0, 0.0, 0.0, size, size, size, rotateX, rotateY, rotateZ, r, g, b)
+    }
+
+    /** Draws a scaled box at a world-space transform. */
+    @Experimental(since: "0.0.4")
+    func boxAt(x: Float, y: Float, z: Float, width: Float, height: Float, depth: Float, rotateX: Float, rotateY: Float, rotateZ: Float, r: Float, g: Float, b: Float) {
+        engineWebBoxAt(x, y, z, width, height, depth, rotateX, rotateY, rotateZ, r, g, b)
+    }
+
+    /** Draws a cylinder whose local axle follows its Y axis. */
+    @Experimental(since: "0.0.4")
+    func cylinderAt(x: Float, y: Float, z: Float, radius: Float, length: Float, rotateX: Float, rotateY: Float, rotateZ: Float, r: Float, g: Float, b: Float) {
+        engineWebCylinderAt(x, y, z, radius, length, rotateX, rotateY, rotateZ, r, g, b)
+    }
+
+    /** Draws a vehicle wheel with independent axle spin and steering yaw. */
+    @Experimental(since: "0.0.4")
+    func wheelAt(x: Float, y: Float, z: Float, radius: Float, width: Float, spin: Float, yaw: Float, steer: Float, r: Float, g: Float, b: Float) {
+        engineWebWheelAt(x, y, z, radius, width, spin, yaw, steer, r, g, b)
+    }
+
+    /** Configures the perspective camera for the active 3D surface. */
+    @Experimental(since: "0.0.4")
+    func camera(distance: Float, fov: Float = 48.0) {
+        engineWebCamera(distance, fov)
+    }
+
+    /** Positions a perspective camera and points it at a world-space target. */
+    @Experimental(since: "0.0.4")
+    func cameraAt(x: Float, y: Float, z: Float, targetX: Float, targetY: Float, targetZ: Float, fov: Float = 48.0) {
+        engineWebCameraAt(x, y, z, targetX, targetY, targetZ, fov)
+    }
+
+    /** Updates the procedural vehicle engine and background soundtrack. */
+    @Experimental(since: "0.0.4")
+    func vehicleAudio(speed: Float, throttle: Float) {
+        engineWebVehicleAudio(speed, throttle)
+    }
+
+    /** Plays a short procedural collision sound. */
+    @Experimental(since: "0.0.4")
+    func crashAudio(intensity: Float = 1.0) {
+        engineWebCrashAudio(intensity)
+    }
+
+    /** Returns a smooth sine wave for procedural animation. */
+    @Experimental(since: "0.0.4")
+    func wave(time: Float, amplitude: Float = 1.0, speed: Float = 1.0): Float {
+        return (sin((time * speed) as Double) as Float) * amplitude
+    }
+
+    /** Writes a message to the engine console. */
+    @Experimental(since: "0.0.4")
+    func log(message: String) {
+        engineWebLog(message)
+    }
+}

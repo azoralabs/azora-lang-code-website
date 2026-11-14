@@ -1,17 +1,12 @@
 import * as THREE from 'three'
 import { BrowserInput } from './browserInput.js'
+import { decodeModule } from './wasmRunner.js'
 
 const TAU = Math.PI * 2
 const AUDIO_SAMPLE_RATE = 22050
 const AUDIO_SAMPLE_SCALE = 28000 / 32768
 const X_AXIS = new THREE.Vector3(1, 0, 0)
 const Y_AXIS = new THREE.Vector3(0, 1, 0)
-let wabtPromise = null
-
-function loadWabt() {
-  if (!wabtPromise) wabtPromise = import('wabt').then(({ default: createWabt }) => createWabt())
-  return wabtPromise
-}
 
 function colorChannel(value) {
   return Math.max(0, Math.min(1, Number(value) || 0))
@@ -523,23 +518,12 @@ class EngineWasmSession {
   }
 }
 
-async function compileWat(wat) {
-  const wabt = await loadWabt()
-  const module = wabt.parseWat('playground.az.wat', wat)
-  try {
-    module.resolveNames()
-    module.validate()
-    return module.toBinary({ log: false, canonicalize_lebs: true }).buffer
-  } finally {
-    module.destroy()
-  }
-}
-
-export async function runEngineWasm({ wat, container, onMessage }) {
+// The compiler assembles the module itself (`binary`, base64); this session
+// supplies the Engine's browser platform imports - surface, input, audio.
+export async function runEngineWasm({ binary, container, onMessage }) {
   const session = new EngineWasmSession(container, onMessage)
   try {
-    const binary = await compileWat(wat)
-    const { instance } = await WebAssembly.instantiate(binary, session.createImports())
+    const { instance } = await WebAssembly.instantiate(decodeModule(binary), session.createImports())
     session.attach(instance)
     if (typeof instance.exports.main !== 'function') throw new Error("Engine programs must export 'async func main()'")
     session.startMain()

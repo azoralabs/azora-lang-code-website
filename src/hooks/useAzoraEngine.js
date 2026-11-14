@@ -39,9 +39,9 @@ export default function useAzoraEngine(version) {
     return engineRef.current.interpret(source, library)
   }, [])
 
-  const generateJavaScript = useCallback((source, library = null) => {
+  const compileWasm = useCallback((source, library = null) => {
     if (!engineRef.current) return { success: false, output: '', errors: 'Engine not loaded' }
-    return engineRef.current.generateJavaScript(source, library)
+    return engineRef.current.compileWasm(source, library)
   }, [])
 
   const generateLlvmIr = useCallback((source, library = null) => {
@@ -65,7 +65,7 @@ export default function useAzoraEngine(version) {
     ready: !loading && !error,
     preprocess,
     interpret,
-    generateJavaScript,
+    compileWasm,
     generateLlvmIr,
     generateWasm,
     runTests,
@@ -74,7 +74,7 @@ export default function useAzoraEngine(version) {
     error,
     preprocess,
     interpret,
-    generateJavaScript,
+    compileWasm,
     generateLlvmIr,
     generateWasm,
     runTests,
