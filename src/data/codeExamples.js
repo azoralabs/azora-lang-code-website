@@ -559,7 +559,7 @@ pack Point {
 }
 
 spec Describable {
-    func describe(): String
+    func &.describe(): String
 }
 
 impl Describable for Point {
