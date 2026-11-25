@@ -1,23 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { loadAzoraLanguageServer } from '../engine/azlsLoader.js'
 
 export default function useAzoraLanguageServer(version) {
   const [state, setState] = useState({ loading: true, server: null, error: null })
-  const generation = useRef(0)
 
   useEffect(() => {
-    const currentGeneration = ++generation.current
+    const controller = new AbortController()
     setState({ loading: true, server: null, error: null })
 
-    loadAzoraLanguageServer(version).then((server) => {
-      if (generation.current === currentGeneration) {
-        setState({ loading: false, server, error: null })
-      }
-    }).catch((error) => {
-      if (generation.current === currentGeneration) {
+    const unavailable = (error) => {
+      if (!controller.signal.aborted) {
         setState({ loading: false, server: null, error: error.message || String(error) })
       }
-    })
+    }
+    loadAzoraLanguageServer(version, controller.signal, unavailable).then((server) => {
+      if (!controller.signal.aborted) {
+        setState({ loading: false, server, error: null })
+      }
+    }).catch(unavailable)
+    return () => controller.abort()
   }, [version])
 
   return state

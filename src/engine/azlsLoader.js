@@ -1,42 +1,6 @@
 const FIELD_MARKER = '<:AZLS-FIELD:>'
 const RECORD_MARKER = '<:AZLS-RECORD:>'
-const WASM_PAGE_BYTES = 64 * 1024
-const MIN_REQUEST_MEMORY_BYTES = 4 * 1024 * 1024
 const HIGHLIGHT_CHUNK_SIZE = 512
-const textEncoder = new TextEncoder()
-const textDecoder = new TextDecoder()
-
-function wasmImports() {
-  const ignore = () => {}
-  return {
-    env: {
-      print_i32: ignore,
-      print_i64: ignore,
-      print_f64: ignore,
-      print_f32: ignore,
-      print_bool: ignore,
-      print_str: ignore,
-      write_i32: ignore,
-      write_i64: ignore,
-      write_f64: ignore,
-      write_f32: ignore,
-      write_bool: ignore,
-      write_str: ignore,
-    },
-  }
-}
-
-function writeString(exports, value) {
-  const bytes = textEncoder.encode(value)
-  const pointer = exports.azlsReserve(bytes.length)
-  new Uint8Array(exports.memory.buffer, pointer + 4, bytes.length).set(bytes)
-  return pointer
-}
-
-function readString(exports, pointer) {
-  const length = new DataView(exports.memory.buffer).getInt32(pointer, true)
-  return textDecoder.decode(new Uint8Array(exports.memory.buffer, pointer + 4, length))
-}
 
 function documentSource(documents, activeSource, documentId) {
   if (documentId === -1) return activeSource
@@ -145,57 +109,67 @@ export function createAzlsWorkspace(documents) {
   return Object.freeze({ contextFor })
 }
 
-function growRequestMemory(exports, args) {
-  const inputBytes = args.reduce((total, argument) => (
-    total + (typeof argument === 'string' ? textEncoder.encode(argument).length + 4 : 0)
-  ), 0)
-  const desiredBytes = Math.max(
-    MIN_REQUEST_MEMORY_BYTES,
-    inputBytes * 8 + WASM_PAGE_BYTES,
-  )
-  const missingBytes = desiredBytes - exports.memory.buffer.byteLength
-  if (missingBytes > 0) {
-    exports.memory.grow(Math.ceil(missingBytes / WASM_PAGE_BYTES))
-  }
-}
-
-export async function loadAzoraLanguageServer(version) {
+export async function loadAzoraLanguageServer(version, signal, onFailure) {
   const basePath = `${import.meta.env.BASE_URL}azls/${version}`
-  const [wasmResponse, workspaceResponse] = await Promise.all([
-    fetch(`${basePath}/azls.wasm`, { cache: 'no-store' }),
-    fetch(`${basePath}/stdlib.json`, { cache: 'no-store' }),
-  ])
+  const abort = new AbortController()
+  const worker = new Worker(new URL('./azlsWorker.js', import.meta.url), { type: 'module' })
+  const lifetime = abort.signal
+  let ready = false
 
-  if (!wasmResponse.ok) {
-    throw new Error(`AZLS WASM could not be loaded (${wasmResponse.status})`)
-  }
-  if (!workspaceResponse.ok) {
-    throw new Error(`AZLS stdlib workspace could not be loaded (${workspaceResponse.status})`)
+  function close(error) {
+    if (lifetime.aborted) return
+    abort.abort(error)
+    worker.terminate()
+    if (ready && !signal.aborted) onFailure(error)
   }
 
-  const [module, workspace] = await Promise.all([
-    WebAssembly.compile(await wasmResponse.arrayBuffer()),
-    workspaceResponse.json(),
-  ])
-  const documents = Object.freeze(workspace.documents || [])
+  worker.onerror = () => close(new Error('AZLS worker failed'))
+  if (signal.aborted) close(signal.reason)
+  else signal.addEventListener('abort', () => close(signal.reason), { once: true })
+
+  function request(message) {
+    lifetime.throwIfAborted()
+    return new Promise((resolve, reject) => {
+      const { port1, port2 } = new MessageChannel()
+      const onClose = () => {
+        cleanup()
+        reject(lifetime.reason)
+      }
+      const cleanup = () => {
+        clearTimeout(timer)
+        lifetime.removeEventListener('abort', onClose)
+        port1.close()
+      }
+      const timer = setTimeout(() => close(new Error('AZLS stopped responding')), 8000)
+      lifetime.addEventListener('abort', onClose, { once: true })
+      port1.onmessage = ({ data: { result, error } }) => {
+        cleanup()
+        if (error) reject(new Error(error))
+        else resolve(result)
+      }
+      worker.postMessage(message, [port2])
+    })
+  }
+
+  let documents
+  try {
+    const workspace = fetch(`${basePath}/stdlib.json`, { cache: 'no-store', signal: lifetime })
+      .then((response) => {
+        if (!response.ok) throw new Error(`AZLS stdlib workspace could not be loaded (${response.status})`)
+        return response.json()
+      })
+    const wasmUrl = new URL(`${basePath}/azls.wasm`, document.baseURI).href
+    const [loaded] = await Promise.all([workspace, request({ wasmUrl })])
+    documents = Object.freeze(loaded.documents || [])
+  } catch (error) {
+    close(error)
+    throw error
+  }
   const workspaceIndex = createAzlsWorkspace(documents)
-
-  async function invoke(exportName, args) {
-    // Azora's current WASM allocator is intentionally monotonic. A fresh,
-    // cheaply-instantiated module per request gives every analysis operation a
-    // bounded arena while WebAssembly.compile remains cached for this version.
-    const instance = await WebAssembly.instantiate(module, wasmImports())
-    const exports = instance.exports
-    growRequestMemory(exports, args)
-    const wasmArgs = args.map((argument) =>
-      typeof argument === 'string' ? writeString(exports, argument) : argument,
-    )
-    const pointer = exports[exportName](...wasmArgs)
-    return readString(exports, pointer)
-  }
+  ready = true
 
   async function invokeJson(exportName, args) {
-    const response = await invoke(exportName, args)
+    const response = await request({ exportName, args })
     try {
       return JSON.parse(response)
     } catch (error) {
